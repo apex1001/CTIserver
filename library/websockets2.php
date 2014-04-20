@@ -91,7 +91,7 @@ abstract class WebSocketServer {
           }
         } 
         else {
-          $numBytes = socket_recv($socket,$buffer,$this->maxBufferSize,0); 
+          $numBytes = @socket_recv($socket,$buffer,$this->maxBufferSize,0); 
           //if ($numBytes === false) {
           //  throw new Exception('Socket error: ' . socket_strerror(socket_last_error($socket)));
           // }
@@ -120,9 +120,9 @@ abstract class WebSocketServer {
               } 
               else {			  
                 do {
-                  $numByte = socket_recv($socket,$buffer,$this->maxBufferSize,MSG_PEEK);
+                  $numByte = @socket_recv($socket,$buffer,$this->maxBufferSize,MSG_PEEK);
                   if ($numByte > 0) {
-                    $numByte = socket_recv($socket,$buffer,$this->maxBufferSize,4); // Changed. Was 0, causes buffer errors!
+                    $numByte = @socket_recv($socket,$buffer,$this->maxBufferSize,4); // Changed. Was 0, causes buffer errors!
                     if (($message = $this->deframe($buffer, $user)) !== FALSE) {
                       if($user->hasSentClose) {
                         $this->disconnect($user->socket);

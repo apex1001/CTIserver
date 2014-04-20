@@ -7,6 +7,7 @@
 	class CommandObject
 	{
 		private $command;
+		private $status;
         private $from;
         private $to;
         private $target;

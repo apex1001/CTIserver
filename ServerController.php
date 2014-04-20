@@ -1,18 +1,19 @@
 <?php
 
 	/*
-	 * The ServerController for the CTI Client
+	 * The ServerController for the Call Control Server
 	 * 
 	 * Uses the WebSocketServer from Adam Alexander @ 
 	 * https://github.com/ghedipunk/PHP-Websockets
 	 * 
 	 * @author V. Vogelesang
-	 * @email apex1001@home.nl
 	 *
 	 */
 
 	require_once('./library/websockets2.php');
 	require_once('./commandObject.php');
+	require_once('./CallController.php');
+	require_once('./DAOFacade.php');
 	
 	/**
 	 * The ServerController for the CTI Client 
@@ -21,108 +22,100 @@
 	class ServerController extends WebSocketServer 
 	{
 		
+		private $callController;
+		private $daoFacade;
+		
+		public function __construct($url, $port)
+		{
+			parent::__construct($url, $port);
+ 			$this->callController = new CallController($this);
+ 			$this->daoFacade = new DAOFacade();
+ 		}	
+		
 		/**
 		 * Process incoming messages
 		 * 
-		 * @param user id
+		 * @param user
 		 * @param message
 		 * 
 		 */		
 		protected function process ($user, $message) 
 		{
-			echo 'Received message ' . $message . ' from ' . $user->socket . "\r\n";
+			//echo 'Received message ' . $message . ' from ' . $user->socket . "\r\n";
 			if ($message !="ping")
 			{
-				$commandObject = json_decode($message);				
-				//var_dump ($commandObject);
-				$this->callSetup($commandObject->From, $commandObject->To, $commandObject->Pin);				
-			}
-			
-			//$this->send($user,$user->id."typed: " . $message .'\r\n');	
+				$commandObject = json_decode($message);
+				
+				// If decode succesfull parse the commandObject
+				if ($commandObject != null) 
+				{
+					$command = $commandObject->Command;
+					switch ($command) 
+					{
+						case "call":
+							$this->callController->callSetup($commandObject, $user);
+							break;
+	
+						case "hangup":
+							$this->callController->callTerminate($commandObject, $user);
+							break;
+	
+						case "transfer":
+							$this->callController->callTransfer($commandObject,  $user);
+							break;
+							
+						case "getSettings":
+							// @todo: implement this
+							break;
+							
+						case "putSettings":
+							// @todo: implement this
+							break;
+								
+						case "getHistory":
+							// @todo: implement this
+							break;
+					}
+				}				
+			}			
 		}
 	
 		/**
 		 * Handle incoming connection
 		 *
-		 * @param user id
+		 * @param user
 		 *
 		 */
 		protected function connected ($user) 
 		{
-			echo 'Connection opened'. $user->socket . " " . $user->id . "\r\n";
+			echo 'Connection opened to: ' . $user->socket . " " . $user->id . "\r\n";
 		}
 		
 		/**
 		 * Handle closed connection
 		 *
-		 * @param user id
+		 * @param user
 		 *
 		 */	
 		protected function closed ($user) 
 		{
-			echo 'Connection closed to: ';
-		}
+			echo 'Connection closed to: ' . $user->socket . " " . $user->id . "\r\n";
+		}	
 		
 		/**
-		 * Setup the call
-		 * Based on : http://wiki.sipfoundry.org/display/sipXecs/Configuration+RESTful+Service
+		 * Send commandObject back to the serverController
 		 *
-		 * @param A-party
-		 * @param B-party
-		 * @param A-pin
+		 * @param $commandObject
+		 *
 		 */
-		function callSetup($from, $to, $pinFrom)
+		public function sendCommand($commandObject, $user)
 		{
-		
-			echo 'Calling from extension '. $from . ' to extension ' . $to . '.....'. "\r\n";
-				
-			// Init session
-			$ch = curl_init();
-		
-			// Set url for A and B party, call via INVITE
-			$url = "http://192.168.1.200:6667/callcontroller/" . $from . "/" . $to . "?sipMethod=INVITE";
-			
-			echo 'Execute command: ' . $url;
-		
-			// Set the options, use A/from credentials!
-			curl_setopt($ch, CURLOPT_URL, $url);
-			curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
-			curl_setopt($ch, CURLOPT_POST, 1);
-			curl_setopt($ch, CURLOPT_USERPWD, $from.":".$pinFrom);
-		
-			// Execute the command
-			$startTime = microtime(true);
-		
-			$result = curl_exec($ch);
-			$diff = microtime(true) - $startTime;
-			$sec = intval($diff);
-			$micro = $diff - $sec;
-		
-			echo 'Time spent: ' . $sec . ':' . $micro;
-		
-			curl_close($ch);
-		
-			
-		}
+			//print_r($user);
+			$message = json_encode($commandObject);
+			$this->send($user, $message);
+			echo ' Sending command to user :' . $user->id . " \r\n" . $message;	
+		}		
 	}
 	
-	// Run server forever until stopped from the console.
-	while (true) {
-		
-		// Init
-		$url = "localhost";
-		$port = "7777";
-		
-		// Start server
-		echo 'Starting Call Control Server on ' . $url . ' port ' . $port . '..';
-		$server = new ServerController($url, $port);
-		try
-		{
-			$server->run();
-		}
-		catch (Exception $e)
-		{
-			$echo->stdout($e->getMessage());
-		}
-	}
+
 	
