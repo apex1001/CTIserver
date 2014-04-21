@@ -100,6 +100,7 @@
 		protected function closed ($user) 
 		{
 			echo 'Connection closed to: ' . $user->socket . " " . $user->id . "\r\n";
+			$this->callController->callTerminate(null, $user);
 		}	
 		
 		/**
@@ -112,7 +113,7 @@
 		{
 			$message = json_encode($commandObject);
 			$this->send($user, $message);
-			//echo ' Sending command to user :' . $user->id . " \r\n" . $message;	
+			echo 'Sending command to user :' . $user->id . " \r\n";// . $message;	
 		}		
 	}
 	
