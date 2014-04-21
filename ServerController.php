@@ -110,10 +110,9 @@
 		 */
 		public function sendCommand($commandObject, $user)
 		{
-			//print_r($user);
 			$message = json_encode($commandObject);
 			$this->send($user, $message);
-			echo ' Sending command to user :' . $user->id . " \r\n" . $message;	
+			//echo ' Sending command to user :' . $user->id . " \r\n" . $message;	
 		}		
 	}
 	
