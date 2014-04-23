@@ -10,10 +10,10 @@
 	 *
 	 */
 
-	require_once('./library/websockets2.php');
-	require_once('./commandObject.php');
 	require_once('./CallController.php');
-	require_once('./DAOFacade.php');
+	require_once('./library/websockets2.php');
+	require_once('./store/domain/CommandObject.php');
+	require_once('./store/dao/DAOFacade.php');
 	
 	/**
 	 * The ServerController for the CTI Client 
@@ -29,7 +29,7 @@
 		{
 			parent::__construct($url, $port);
  			$this->callController = new CallController($this);
- 			$this->daoFacade = new DAOFacade();
+ 			$this->daoFacade = new DAOFacade($this);
  		}	
 		
 		/**
@@ -65,7 +65,7 @@
 							break;
 							
 						case "getSettings":
-							// @todo: implement this
+							$this->getUserSettings($commandObject, $user);
 							break;
 							
 						case "putSettings":
@@ -113,8 +113,55 @@
 		{
 			$message = json_encode($commandObject);
 			$this->send($user, $message);
-			echo 'Sending command to user :' . $user->id . " \r\n";// . $message;	
-		}		
+			echo 'Sending command to user :' . $user->id . " \r\n" . $message . " \r\n";	
+		}	
+
+		/**
+		 * Get user settings
+		 * 
+		 * @param $commandObject
+		 * @param $user (websocket user!)
+		 */
+		private function getUserSettings($commandObject, $user)
+		{
+			$from = "";
+			$pin = "";
+			$role = "user";
+			$value = "";
+			$extensionArray = null;			
+			
+			// Check if user exists in database
+			$username = $commandObject->User;
+			$userObject = $this->daoFacade->getUserDAO()->read($username);
+			
+			if ($userObject != null) 
+			{
+				$role = $userObject->getRole();
+				$extensionArray = $this->daoFacade->getExtensionDAO()->getExtensionList($username);			
+					
+				// find primary extension
+				foreach($extensionArray as $item)
+				{
+					if ($item->getPrimaryNumber() == 't' || $item->getPrimaryNumber() == true)
+					{
+						$from = $item->getExtensionNumber();
+						$pin = $item->getPin();
+						break;
+					}
+				}
+			}
+			
+			var_dump($extensionArray);
+			
+			$commandObject->Command = "settingsList";
+			//$commandObject->Value = $extensionArray;
+			$commandObject->From = $from;
+			$commandObject->Pin = $pin;
+			$commandObject->Role = $role;
+			
+			// Send to client
+			$this->sendCommand($commandObject, $user);				
+		}
 	}
 	
 

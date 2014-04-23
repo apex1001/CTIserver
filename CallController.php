@@ -11,7 +11,7 @@
 	class ActiveUserList extends Stackable { public function run() { } };
 	class UserArray extends Stackable { public function run() { } };
 	
-	require_once('./commandObject.php');
+	require_once('./store/domain/CommandObject.php');
 	require_once('./RESTClient.php');
 	
 	class CallController
@@ -141,8 +141,7 @@
 		public function run()
 		{
 			while (true)
-			{				
-				
+			{					
 				//echo count($this->activeUserList);			
 				//sleep(1);
 				if (count($this->activeUserList) > 0)
