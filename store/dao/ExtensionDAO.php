@@ -149,10 +149,11 @@
 			
 			for ($i = 0; $i < $rows; $i++)
 			{
-				$resultArray[] = pg_fetch_object($result, $i, "Extension");
+				$resultArray[] = pg_fetch_row($result, $i);
 			}
 			
 			pg_free_result($result);
+			print_r($resultArray);
 			return $resultArray;			
 		}
 	}

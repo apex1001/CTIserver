@@ -142,19 +142,19 @@
 				// find primary extension
 				foreach($extensionArray as $item)
 				{
-					if ($item->getPrimaryNumber() == 't' || $item->getPrimaryNumber() == true)
+					if ($item[2] == 't')
 					{
-						$from = $item->getExtensionNumber();
-						$pin = $item->getPin();
+						$from = $item[1];
+						$pin = $item[4];
 						break;
 					}
 				}
 			}
 			
-			var_dump($extensionArray);
+			print_r($extensionArray);
 			
 			$commandObject->Command = "settingsList";
-			//$commandObject->Value = $extensionArray;
+			$commandObject->Value = $extensionArray;
 			$commandObject->From = $from;
 			$commandObject->Pin = $pin;
 			$commandObject->Role = $role;
