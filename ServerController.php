@@ -13,6 +13,8 @@
 	require_once('./CallController.php');
 	require_once('./library/websockets2.php');
 	require_once('./store/domain/CommandObject.php');
+	require_once('./store/domain/User.php');
+	require_once('./store/domain/Extension.php');
 	require_once('./store/dao/DAOFacade.php');
 	
 	/**
@@ -41,7 +43,7 @@
 		 */		
 		protected function process ($user, $message) 
 		{
-			//echo 'Received message ' . $message . ' from ' . $user->socket . "\r\n";
+			echo 'Received message ' . $message . ' from ' . $user->socket . "\r\n";
 			if ($message !="ping")
 			{
 				$commandObject = json_decode($message);
@@ -68,9 +70,13 @@
 							$this->getUserSettings($commandObject, $user);
 							break;
 							
-						case "putSettings":
-							// @todo: implement this
+						case "updateSettings":
+							$this->putUserSettings($commandObject, $user);
 							break;
+							
+						case "deleteSettings":
+								$this->deleteUserSettings($commandObject, $user);
+								break;
 								
 						case "getHistory":
 							// @todo: implement this
@@ -150,9 +156,7 @@
 					}
 				}
 			}
-			
-			print_r($extensionArray);
-			
+						
 			$commandObject->Command = "settingsList";
 			$commandObject->Value = $extensionArray;
 			$commandObject->From = $from;
@@ -161,6 +165,77 @@
 			
 			// Send to client
 			$this->sendCommand($commandObject, $user);				
+		}
+		
+		/**
+		 * Save or update user settings
+		 *
+		 * @param $commandObject
+		 * @param $user (websocket user!)
+		 */
+		private function putUserSettings($commandObject, $user)
+		{
+			$extensionArray = $commandObject->Value;
+				
+			// Check if user exists in database
+			$username = $commandObject->User;
+			$userObject = $this->daoFacade->getUserDAO()->read($username);
+			
+			// Create user if it does not exist yet
+			if ($userObject == null) 
+			{
+				$user = new User();
+				$user->setUsername($username);
+				$user->setRole("user");
+				$this->daoFacade->getUserDAO()->write($user);				
+			}
+
+			// Iterate all the extensions, create new if not existing
+			foreach ($extensionArray as $item)
+			{
+				$extension = $this->createExtension($item);
+				if ($item[0] == null)
+				{					
+					$this->daoFacade->getExtensionDAO()->write($extension);
+					continue;
+				}
+				$this->daoFacade->getExtensionDAO()->update($extension);				
+			}
+		}
+		
+		/**
+		 * Delete user settings
+		 *
+		 * @param $commandObject
+		 * @param $user (websocket user!)
+		 */
+		private function deleteUserSettings($commandObject, $user)
+		{
+			$extensionArray = $commandObject->Value;		
+		
+			// Iterate all the extensions, create new if not existing
+			foreach ($extensionArray as $item)
+			{
+				$extension = $this->createExtension($item);
+				$this->daoFacade->getExtensionDAO()->delete($extension);				
+			}
+		}
+		
+		/**
+		 * Create an extension object from array item
+		 * 
+		 * @param $extensionItem in array format
+		 * @return $extension object
+		 */
+		private function createExtension($extensionItem)
+		{
+			$extension = new Extension();	
+			$extension->setExtensionNumber($extensionItem[1]);
+			$extension->setPrimaryNumber($extensionItem[2]);
+			$extension->setUsername($extensionItem[3]);
+			$extension->setPin($extensionItem[4]);
+			$extension->setUserEdit($extensionItem[5]);	
+			return $extension;
 		}
 	}
 	

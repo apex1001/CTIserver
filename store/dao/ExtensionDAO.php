@@ -54,11 +54,12 @@
 			$primary_number = $extension->getPrimaryNumber();
 			$username = $extension->getUsername();
 			$pin = $extension->getPin();
+			$userEdit = $extension->getUserEdit();
 			
 			$result = pg_query_params(
 					$this->connection,
-					'INSERT INTO extensions (extension_number, primary_number, username, pin) values ($1, $2, $3, $4)',
-					array($extension_number, $primary_number, $username, $pin));
+					'INSERT INTO extensions (extension_number, primary_number, username, pin, useredit) values ($1, $2, $3, $4, $5)',
+					array($extension_number, $primary_number, $username, $pin, $userEdit));
 
 			if(!$result)
 			{
@@ -85,7 +86,7 @@
 		
 			$result = pg_query_params(
 					$this->connection,
-					'UPDATE extensions SET primary_number = $1 WHERE $extension_number = $2 AND $username = $3',
+					'UPDATE extensions SET primary_number = $1 WHERE extension_number = $2 AND username = $3',
 					array($primary_number, $extension_number, $username));
 		
 			if(!$result)
@@ -152,8 +153,7 @@
 				$resultArray[] = pg_fetch_row($result, $i);
 			}
 			
-			pg_free_result($result);
-			print_r($resultArray);
+			pg_free_result($result);			
 			return $resultArray;			
 		}
 	}

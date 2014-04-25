@@ -13,6 +13,7 @@
 		private $extension_number;
 		private $primary_number;
 		private $pin;
+		private $userEdit;
 	
 		public function __construct()
 		{
@@ -56,5 +57,15 @@
 		public function setPin($pin)
 		{
 			$this->pin = $pin;
+		}
+		
+		public function getUserEdit()
+		{
+			return $this->userEdit;
+		}
+		
+		public function setUserEdit($userEdit)
+		{
+			$this->userEdit = $userEdit;
 		}
 	}
