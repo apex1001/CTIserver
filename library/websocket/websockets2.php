@@ -63,7 +63,7 @@ abstract class WebSocketServer {
   protected function send($user,$message) {
     //$this->stdout("> $message");
     $message = $this->frame($message,$user);
-    $result = @socket_write($user->socket, $message, strlen($message));
+    $result = socket_write($user->socket, $message, strlen($message));
   }
 
   /**
@@ -77,7 +77,7 @@ abstract class WebSocketServer {
       }
       $read = $this->sockets;
       $write = $except = null;
-      @socket_select($read,$write,$except,null);
+      socket_select($read,$write,$except,null);
       foreach ($read as $socket) {
         if ($socket == $this->master) {
           $client = socket_accept($socket);
@@ -91,7 +91,7 @@ abstract class WebSocketServer {
           }
         } 
         else {
-          $numBytes = @socket_recv($socket,$buffer,$this->maxBufferSize,0); 
+          $numBytes = socket_recv($socket,$buffer,$this->maxBufferSize,0); 
           //if ($numBytes === false) {
           //  throw new Exception('Socket error: ' . socket_strerror(socket_last_error($socket)));
           // }
@@ -120,9 +120,9 @@ abstract class WebSocketServer {
               } 
               else {			  
                 do {
-                  $numByte = @socket_recv($socket,$buffer,$this->maxBufferSize,MSG_PEEK);
+                  $numByte = socket_recv($socket,$buffer,$this->maxBufferSize,MSG_PEEK);
                   if ($numByte > 0) {
-                    $numByte = @socket_recv($socket,$buffer,$this->maxBufferSize,4); // Changed. Was 0, causes buffer errors!
+                    $numByte = socket_recv($socket,$buffer,$this->maxBufferSize,4); // Changed. Was 0, causes buffer errors!
                     if (($message = $this->deframe($buffer, $user)) !== FALSE) {
                       if($user->hasSentClose) {
                         $this->disconnect($user->socket);
@@ -163,7 +163,7 @@ abstract class WebSocketServer {
       unset($this->users[$foundUser]);
       $this->users = array_values($this->users);
       $message = $this->frame('', $disconnectedUser, 'close');
-      @socket_write($disconnectedUser->socket, $message, strlen($message));
+      socket_write($disconnectedUser->socket, $message, strlen($message));
     }
     foreach ($this->sockets as $key => $sock) {
       if ($sock == $socket) {

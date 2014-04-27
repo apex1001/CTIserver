@@ -21,13 +21,13 @@
 		private $historyDAO;
 		private $extensionDAO;
 		private $connection;
-		private $connectionString = "host=192.168.1.200 dbname=ctidb user=ctiuser password=ctiftw01";
+		private $connectionString;
 		
 		public function __construct($controller)
 		{			
 			$this->controller = $controller;
-			$this->connection = $this->connect($this->connectionString);
-			
+			$this->connectionString = $this->getConnectionString();	
+			$this->connection = $this->connect($this->connectionString);			
 			$this->userDAO = new UserDAO($this->connection);
 			$this->roleDAO = new RoleDAO($this->connection);
 			$this->historyDAO = new HistoryDAO($this->connection);
@@ -52,6 +52,16 @@
 		public function getHistoryDAO()
 		{
 			return $this->historyDAO;
+		}
+		
+		private function getConnectionString()
+		{
+			$settingsArray = $this->controller->getSettingsArray();
+			$connectionString = "host=" . $settingsArray['psqlHost'] .
+			" dbname=" . $settingsArray['psqlDbName'] .
+			" user=" . $settingsArray['psqlUser'] .
+			" password=" . $settingsArray['psqlPass'];
+			return $connectionString;
 		}
 		
 		/**

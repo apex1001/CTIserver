@@ -11,7 +11,7 @@
 	 */
 
 	require_once('./CallController.php');
-	require_once('./library/websockets2.php');
+	require_once('./library/websocket/websockets2.php');
 	require_once('./store/domain/CommandObject.php');
 	require_once('./store/domain/User.php');
 	require_once('./store/domain/Extension.php');
@@ -22,16 +22,17 @@
 	 *
 	 */
 	class ServerController extends WebSocketServer 
-	{
-		
+	{		
 		private $callController;
 		private $daoFacade;
+		private $settingsArray;
 		
 		public function __construct($url, $port)
 		{
 			parent::__construct($url, $port);
+			$this->readSettings();
  			$this->callController = new CallController($this);
- 			$this->daoFacade = new DAOFacade($this);
+ 			$this->daoFacade = new DAOFacade($this);	 			
  		}	
 		
 		/**
@@ -42,10 +43,11 @@
 		 * 
 		 */		
 		protected function process ($user, $message) 
-		{
+		{			
 			echo 'Received message ' . $message . ' from ' . $user->socket . "\r\n";
 			if ($message !="ping")
 			{
+				$message = $this->cleanMsg($message);
 				$commandObject = json_decode($message);
 				
 				// If decode succesfull parse the commandObject
@@ -58,7 +60,7 @@
 							$this->callController->callSetup($commandObject, $user);
 							break;
 	
-						case "hangup":
+						case "terminate":
 							$this->callController->callTerminate($commandObject, $user);
 							break;
 	
@@ -222,6 +224,25 @@
 		}
 		
 		/**
+		 * Read the settings file and apply values
+		 * 
+		 */
+		private function readSettings()
+		{
+			$this->settingsArray = parse_ini_file('./conf/settings.ini');
+		}
+		
+		/**
+		 * Return the current settings array
+		 * 
+		 * @return settingsArray
+		 */
+		public function getSettingsArray()
+		{
+			return $this->settingsArray;
+		}
+		
+		/**
 		 * Create an extension object from array item
 		 * 
 		 * @param $extensionItem in array format
@@ -236,6 +257,19 @@
 			$extension->setPin($extensionItem[4]);
 			$extension->setUserEdit($extensionItem[5]);	
 			return $extension;
+		}
+		
+		/**
+		 * Clean any unwanted characters from a message.
+		 * 
+		 * @param $message
+		 * @return $cleanedMessage
+		 */
+		private function cleanMsg($message)
+		{
+			$regex = '/[\x01-\x1F\x7F-\xFF]/';
+			$message = preg_replace($regex, '', $message);
+			return substr($message,0,strrpos($message, "}")+1);
 		}
 	}
 	

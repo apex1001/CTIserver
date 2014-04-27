@@ -26,7 +26,7 @@
 		{
 			$this->controller = $controller;
 			$this->userArray = new UserArray();
-			$this->restClient = new RESTClient();
+			$this->restClient = new RESTClient($controller);
 			$this->updateThread = new UpdateThread($this);
 			$this->updateThread->start();	
 		}
@@ -69,16 +69,30 @@
 		 */
 		public function callTerminate($commandObject, $user)
 		{
-			// Remove from list on disconnect
-			if ($commandObject == null)
-			{
-				$this->updateThread->removeUserByObject($user);
-			}				
+			if ($commandObject != null && $commandObject->Command == 'terminate')
+			{				
+				$xmlResponse = $this->restClient->callTerminate($commandObject);
+				$xmlStripped = str_replace ("-","", $xmlResponse);
+				$response = simplexml_load_string($xmlStripped);					
+			}	
+			$this->updateThread->removeUserByObject($user);
 		}
 		
+		/**
+		 * Transfer a call
+		 * 
+		 * @param $commandObject
+		 * @param $user
+		 */
 		public function callTransfer($commandObject, $user)
 		{
-			//
+			if ($commandObject != null && $commandObject->Command == 'transfer')
+			{				
+				$xmlResponse = $this->restClient->callTransfer($commandObject);
+				$xmlStripped = str_replace ("-","", $xmlResponse);
+				$response = simplexml_load_string($xmlStripped);					
+			}	
+			$this->updateThread->removeUserByObject($user);
 		}
 		
 		/**
@@ -112,11 +126,20 @@
 			$user->socket = $socket;
 			$this->controller->sendCommand($commandObject, $user);						
 		} 
+		
+		/**
+		 * Returns the Server controller instance
+		 * 
+		 * @return $serverController
+		 */
+		public function getController()
+		{
+			return $this->controller;
+		}
 	}
 	
 	/**
-	 * Timer thread for call status polling
-	 *
+	 * Update thread for call status polling
 	 *
 	 */	
 	class UpdateThread extends Thread
@@ -124,14 +147,13 @@
 		private $controller;
 		private $activeUserList;
 		private $restClient;
-		private $pollTimeout = 2;
 		private $listChanged;
 	
 		public function __construct($controller)
 		{
 			$this->activeUserList = new ActiveUserList();
 			$this->controller = $controller;
-			$this->restClient = new RESTClient();			
+			$this->restClient = new RESTClient($controller->getController());			
 		}
 	
 		/**
@@ -142,76 +164,83 @@
 		{
 			while (true)
 			{					
-				//echo count($this->activeUserList);			
-				//sleep(1);
-				if (count($this->activeUserList) > 0)
-				{						
-					foreach ($this->activeUserList as $key => $userArray)
-					{
-						if ($this->listChanged) 
+				try 
+				{				
+					// echo count($this->activeUserList);			
+					// sleep(1);
+					if (count($this->activeUserList) > 0)
+					{						
+						foreach ($this->activeUserList as $key => $userArray)
 						{
-							$this->listChanged = false;
-							break;
-						}
-															
-						// Check for call status after pollTimeout
-						if (microtime(true) - $userArray[3] > $this->pollTimeout)
-						{								
-							// Reset timer for user
-							$userArray[3] = microtime(true);
-							// Get call status
-							$status = $this->getCallStatus($userArray);							
-							if ($status != null && $status != "null")
+							if ($this->listChanged) 
+							{
+								$this->listChanged = false;
+								break;
+							}
+																
+							// Check for call status after pollTimeout
+							if ((microtime(true) - $userArray[3]) > 2)
 							{								
-								// Has the call status changed? Send new commandObject to client!
-								$callStatus = $userArray[2]->Status;
-								//echo 'rest:' . $status . ' client co:' . $callStatus . "\r\n";
+								// Reset timer for user
+								$userArray[3] = microtime(true);
 								
-								if ($status != $callStatus)
-								{
-									echo 'Call status of user: ' . $userArray[0] . ' is: ' . $status . "\r\n";									
+								// Get call status
+								$status = $this->getCallStatus($userArray);							
+								if ($status != null && $status != "null")
+								{								
+									// Has the call status changed? Send new commandObject to client!
+									$callStatus = $userArray[2]->Status;
 									
+									if ($status != $callStatus)
+									{
+										echo 'Call status of user: ' . $userArray[0] . ' is: ' . $status . "\r\n";									
+										
+										// Get commandObject, user and update status
+										$socket = $userArray[4];									
+										$commandObject = $userArray[2];
+																			
+										$commandObject->Status = $status;
+										$userArray[2] = $commandObject;
+										$userArray[4] = $socket;
+										
+										// Send changed status
+										$this->controller->sendCommand($commandObject, $userArray[1], $socket);
+										
+										// Remove user from list if call terminated
+										if ($status == "Terminated Dialog")
+										{																		
+											// Remove user from the list
+											$this->removeUser($key);	
+										}							
+									}						
+								}
+	
+								if ($status == null)
+								{
+									echo 'Call status of user: ' . $userArray[0] . " is: Terminated dialog\r\n";
+										
 									// Get commandObject, user and update status
-									$socket = $userArray[4];									
+									$socket = $userArray[4];
 									$commandObject = $userArray[2];
-																		
-									$commandObject->Status = $status;
+									
+									$commandObject->Status = "Terminated Dialog";
 									$userArray[2] = $commandObject;
 									$userArray[4] = $socket;
 									
 									// Send changed status
-									$this->controller->sendCommand($commandObject, $userArray[1], $socket);
+									$this->controller->sendCommand($commandObject, $userArray[1], $socket);									
 									
-									// Remove user from list if call terminated
-									if ($status == "Terminated Dialog")
-									{																		
-										// Remove user from the list
-										$this->removeUser($key);	
-									}							
-								}						
-							}
-
-							if ($status == null)
-							{
-								echo 'Call status of user: ' . $userArray[0] . " is: Terminated dialog\r\n";
-									
-								// Get commandObject, user and update status
-								$socket = $userArray[4];
-								$commandObject = $userArray[2];
-								
-								$commandObject->Status = "Terminated Dialog";
-								$userArray[2] = $commandObject;
-								$userArray[4] = $socket;
-								
-								// Send changed status
-								$this->controller->sendCommand($commandObject, $userArray[1], $socket);									
-								
-								// Remove user from the list
-								$this->removeUser($key);
-							}
- 						}
-					}						
-				}			
+									// Remove user from the list
+									$this->removeUser($key);
+								}
+	 						}
+						}						
+					}
+				}
+				catch (Exception $e)
+				{
+					echo $e->getMessage();
+				}				
 			}
 		}		
 		
@@ -229,6 +258,7 @@
 				// Get the XML response and turn it into a response object
 				$xmlResponse = $this->restClient->getStatus($userArray[2]);
 				$xmlStripped = str_replace ("-","", $xmlResponse);
+				//echo $xmlResponse;
 				$response = simplexml_load_string($xmlStripped);
 				if ($response != null && property_exists($response, 'dialog') && count($response) > 0)
 				{
@@ -265,6 +295,11 @@
 			$this->setList($this->activeUserList);			
 		}
 		
+		/**
+		 * Set the active user list
+		 * 
+		 * @param $activeUserList
+		 */
 		public function setList($list)
 		{
 			$this->activeUserList = $list;

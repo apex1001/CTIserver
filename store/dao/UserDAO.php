@@ -27,7 +27,6 @@
 		 */
 		public function read($username)
 		{
-			echo $username;
 			$obj = null;			
 			$result = pg_query_params(
 					$this->connection,

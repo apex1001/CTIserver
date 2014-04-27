@@ -6,7 +6,7 @@
 	while (true) 
 	{
 		// Init
-		$url = "localhost";
+		$url = gethostbyname(trim(`hostname`));
 		$port = "7777";
 	
 		// Start server
