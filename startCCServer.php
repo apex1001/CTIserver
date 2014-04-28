@@ -6,7 +6,8 @@
 	while (true) 
 	{
 		// Init
-		$url = gethostbyname(trim(`hostname`));
+		$options = getopt("h:");		
+		$url = $options['h'];		
 		$port = "7777";
 	
 		// Start server
