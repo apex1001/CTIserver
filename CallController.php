@@ -40,10 +40,18 @@
 		 */
 		public function callSetup($commandObject, $user)
 		{					
-			$xmlResponse = $this->restClient->callSetup($commandObject);
+			if (strpos($commandObject->From, '0') == 0 )
+			{
+				$xmlResponse = $this->restClient->callSetupExternal($commandObject);
+			}
+			else
+			{
+				$xmlResponse = $this->restClient->callSetup($commandObject);				
+			}
+
 			$xmlStripped = str_replace ("-","", $xmlResponse);
-			$response = simplexml_load_string($xmlStripped);
-			
+			$response = @simplexml_load_string($xmlStripped);
+						
 			// Check for busy
 			if ($response != null && property_exists($response, 'errorcode'))
 			{
@@ -73,7 +81,7 @@
 			{				
 				$xmlResponse = $this->restClient->callTerminate($commandObject);
 				$xmlStripped = str_replace ("-","", $xmlResponse);
-				$response = simplexml_load_string($xmlStripped);					
+				$response = @simplexml_load_string($xmlStripped);					
 			}	
 			$this->updateThread->removeUserByObject($user);
 		}
@@ -259,7 +267,8 @@
 				$xmlResponse = $this->restClient->getStatus($userArray[2]);
 				$xmlStripped = str_replace ("-","", $xmlResponse);
 				//echo $xmlResponse;
-				$response = simplexml_load_string($xmlStripped);
+				
+				$response = @simplexml_load_string($xmlStripped);
 				if ($response != null && property_exists($response, 'dialog') && count($response) > 0)
 				{
 					if (is_array($response->dialog)) {
