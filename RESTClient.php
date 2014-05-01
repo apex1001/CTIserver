@@ -40,6 +40,9 @@
 				$to = $commandObject->To;
 				$pin = $commandObject->Pin;
 				
+				if ($commandObject->Target != "")
+					$to = $commandObject->Target;
+				
 				echo 'Calling from extension '. $from . ' to extension ' . $to . '.....'. "\r\n";
 				
 				// Set url for A and B party, call via INVITE
@@ -185,6 +188,11 @@
 				$from = $commandObject->From;
 				$pin = $commandObject->Pin;
 				$to = $commandObject->To;
+				
+				if ($commandObject->Target != "")
+				{
+					$to = $commandObject->Target;
+				}
 				
 				if (strpos($commandObject->From, '0') == 0 )
 				{

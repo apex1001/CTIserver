@@ -174,8 +174,8 @@
 			{					
 				try 
 				{				
-					// echo count($this->activeUserList);			
-					// sleep(1);
+					echo count($this->activeUserList);			
+					sleep(1);
 					if (count($this->activeUserList) > 0)
 					{						
 						foreach ($this->activeUserList as $key => $userArray)
@@ -193,7 +193,8 @@
 								$userArray[3] = microtime(true);
 								
 								// Get call status
-								$status = $this->getCallStatus($userArray);							
+								$status = $this->getCallStatus($userArray);	
+								//var_dump($userArray);						
 								if ($status != null && $status != "null")
 								{								
 									// Has the call status changed? Send new commandObject to client!
@@ -222,26 +223,7 @@
 										}							
 									}						
 								}
-	
-								if ($status == null)
-								{
-									echo 'Call status of user: ' . $userArray[0] . " is: Terminated dialog\r\n";
-										
-									// Get commandObject, user and update status
-									$socket = $userArray[4];
-									$commandObject = $userArray[2];
-									
-									$commandObject->Status = "Terminated Dialog";
-									$userArray[2] = $commandObject;
-									$userArray[4] = $socket;
-									
-									// Send changed status
-									$this->controller->sendCommand($commandObject, $userArray[1], $socket);									
-									
-									// Remove user from the list
-									$this->removeUser($key);
-								}
-	 						}
+							}
 						}						
 					}
 				}
@@ -266,7 +248,7 @@
 				// Get the XML response and turn it into a response object
 				$xmlResponse = $this->restClient->getStatus($userArray[2]);
 				$xmlStripped = str_replace ("-","", $xmlResponse);
-				//echo $xmlResponse;
+				echo $xmlResponse;
 				
 				$response = @simplexml_load_string($xmlStripped);
 				if ($response != null && property_exists($response, 'dialog') && count($response) > 0)
