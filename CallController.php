@@ -174,8 +174,8 @@
 			{					
 				try 
 				{				
-					echo count($this->activeUserList);			
-					sleep(1);
+					//echo count($this->activeUserList);			
+					//sleep(1);
 					if (count($this->activeUserList) > 0)
 					{						
 						foreach ($this->activeUserList as $key => $userArray)
@@ -192,8 +192,13 @@
 								// Reset timer for user
 								$userArray[3] = microtime(true);
 								
-								// Get call status
-								$status = $this->getCallStatus($userArray);	
+								// Get call status for current extension
+								
+								$extension = $userArray[2]->To;
+								if ($userArray[2]->Target != "") 						
+									$extension = $userArray[2]->Target;						
+								$status = $this->getCallStatus($userArray, $extension);	
+								
 								//var_dump($userArray);						
 								if ($status != null && $status != "null")
 								{								
@@ -205,12 +210,21 @@
 										echo 'Call status of user: ' . $userArray[0] . ' is: ' . $status . "\r\n";									
 										
 										// Get commandObject, user and update status
-										$socket = $userArray[4];									
-										$commandObject = $userArray[2];
-																			
+										// Get then store again to get correct object reference. Don't change this
+										$socket = $userArray[4];
+										//echo ' ********* Socket status:';
+										//var_dump($socket);									
+										$commandObject = $userArray[2];																			
 										$commandObject->Status = $status;
+										$commandObject->Value = array(array($extension));
 										$userArray[2] = $commandObject;
 										$userArray[4] = $socket;
+										
+										// If invalid socket, get it from original user object.
+										if (gettype($socket) == "unknown type")
+										{
+											$socket = $this->getSocketById($userArray[0]);
+										}
 										
 										// Send changed status
 										$this->controller->sendCommand($commandObject, $userArray[1], $socket);
@@ -241,22 +255,25 @@
 		 * @return call status string
 		 * 
 		 */
-		private function getCallStatus($userArray)
+		private function getCallStatus($userArray, $extension)
 		{			
 			try 
 			{
 				// Get the XML response and turn it into a response object
 				$xmlResponse = $this->restClient->getStatus($userArray[2]);
 				$xmlStripped = str_replace ("-","", $xmlResponse);
-				echo $xmlResponse;
+				//echo $xmlResponse;
 				
 				$response = @simplexml_load_string($xmlStripped);
 				if ($response != null && property_exists($response, 'dialog') && count($response) > 0)
 				{
 					if (is_array($response->dialog)) {
-						// Get first record of the dialog array
-						$status = $response->dialog[0]->dialogstate;
-						return (string) $status;
+						// Get first record of the dialog array matching the extension
+						foreach ($response->dialog as $dialogEntry)
+						{
+							if (strpos($extension, $dialogEntry->remoteparty) !== false )
+								return (string) $dialogEntry->dialogstate;
+						}
 					}
 					else
 					{
@@ -271,6 +288,25 @@
 			}
 		
 			return null;		
+		}
+		
+		/**
+		 * Get the Socket object for the given id
+		 * 
+		 * @param $idString
+		 * @return $socket obejct
+		 * 
+		 */
+		private function getSocketById($id)
+		{
+			foreach( $this->activeUserList as $item)
+			{
+				if ($item[0] == $id && gettype($item[4]) != "unknown type")
+				{
+					return $item[4];
+				}
+			}
+			return null;
 		}
 		
 		/**
@@ -304,6 +340,26 @@
  		 */		
 		public function removeUser($index)
 		{
+			// Pass socket object to 2nd line entry if applicable
+			$socket = $this->activeUserList[$index][4];
+			$userId = ($this->activeUserList[$index][0]);
+			
+			if (gettype($socket) != "unknown type")
+			{
+				// Search for the same id with socket type unknown				
+				foreach ($this->activeUserList as $key => $userArray)
+				{
+					if ($userArray[0] == $userId && gettype($userArray[4]) == "unknown type")
+					{
+						$userArray[4] = $socket;
+						$this->activeUserList[$key] = $userArray;
+						//echo "******* socket is now:";
+						//var_dump($this->activeUserList[$key][4]);
+						break;
+					}
+				}
+			}		
+			
 			unset($this->activeUserList[$index]);
 			$this->listChanged = true;
 		}

@@ -16,23 +16,24 @@
 	require_once('./store/domain/User.php');
 	require_once('./store/domain/Extension.php');
 	require_once('./store/dao/DAOFacade.php');
-	
+
 	/**
 	 * The ServerController for the CTI Client 
 	 *
 	 */
-	class ServerController extends WebSocketServer 
+	class ServerController extends WebSocketServer
 	{		
 		private $callController;
 		private $daoFacade;
 		private $settingsArray;
+		private $userList;
 		
 		public function __construct($url, $port)
 		{
 			parent::__construct($url, $port);
 			$this->readSettings();
  			$this->callController = new CallController($this);
- 			$this->daoFacade = new DAOFacade($this);	 			
+ 			$this->daoFacade = new DAOFacade($this);	
  		}	
 		
 		/**
@@ -108,7 +109,6 @@
 		protected function closed ($user) 
 		{
 			echo 'Connection closed to: ' . $user->socket . " " . $user->id . "\r\n";
-			$this->callController->callTerminate(null, $user);
 		}	
 		
 		/**
@@ -118,7 +118,7 @@
 		 *
 		 */
 		public function sendCommand($commandObject, $user)
-		{
+		{		
 			$message = json_encode($commandObject);
 			$this->send($user, $message);
 			echo 'Sending command to user :' . $user->id . " \r\n" . $message . " \r\n";	
