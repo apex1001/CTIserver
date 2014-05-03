@@ -78,11 +78,11 @@
 							break;
 							
 						case "deleteSettings":
-								$this->deleteUserSettings($commandObject, $user);
-								break;
+							$this->deleteUserSettings($commandObject, $user);
+							break;
 								
 						case "getHistory":
-							// @todo: implement this
+							$this->getUserHistory($commandObject, $user);
 							break;
 					}
 				}				
@@ -224,6 +224,28 @@
 		}
 		
 		/**
+		 * Get the user history
+		 *
+		 * @param $commandObject
+		 * @param $user
+		 */
+		private function getUserHistory($commandObject, $user)
+		{
+			$userName = $commandObject->User;
+			$historyArray = $this->daoFacade->getHistoryDAO()->getHistoryList($userName);	
+
+			$commandObject->Command = "userHistory";
+			$commandObject->Value = $historyArray;
+			
+			if (count($historyArray) < 1)
+				$commandObject->Value = null;
+				
+			// Send to client
+			$this->sendCommand($commandObject, $user);			
+		}
+		
+		
+		/**
 		 * Read the settings file and apply values
 		 * 
 		 */
@@ -240,6 +262,17 @@
 		public function getSettingsArray()
 		{
 			return $this->settingsArray;
+		}
+		
+		/**
+		 * Get DAOFacade
+		 * 
+		 * @return DAOFacade
+		 * 
+		 */
+		public function getDaoFacade()
+		{
+			return $this->daoFacade;
 		}
 		
 		/**

@@ -65,7 +65,12 @@
 			}
 		
 			// Add user to the active user list
-			$this->addUser($commandObject, $user);				
+			$this->addUser($commandObject, $user);
+
+			// Write history for given call
+			$this->writeHistory($commandObject);
+			
+
 		}
 		
 		/**
@@ -83,7 +88,7 @@
 				$xmlStripped = str_replace ("-","", $xmlResponse);
 				$response = @simplexml_load_string($xmlStripped);					
 			}	
-			$this->updateThread->removeUserByObject($user);
+			$this->updateThread->removeUserByObject($user);		
 		}
 		
 		/**
@@ -144,6 +149,25 @@
 		{
 			return $this->controller;
 		}
+		
+		/**
+		 * Write history for given call
+		 * 
+		 * @param $commandObject
+		 */
+		public function writeHistory($commandObject)
+		{
+			// Write history entry to the database
+			$history = new History();
+			$dialledParty = $commandObject->To;
+			if ($commandObject->Target != "")
+				$dialledParty = $commandObject->Target;
+			$history->setUsername($commandObject->User);
+			$history->setDialledParty($dialledParty);
+		
+			$this->controller->getDaoFacade()->getHistoryDAO()->write($history);
+		}
+
 	}
 	
 	/**
@@ -153,6 +177,7 @@
 	class UpdateThread extends Thread
 	{
 		private $controller;
+		private $daoFacade;
 		private $activeUserList;
 		private $restClient;
 		private $listChanged;
@@ -161,6 +186,8 @@
 		{
 			$this->activeUserList = new ActiveUserList();
 			$this->controller = $controller;
+			$this->serverController = $controller->getController();
+			$this->daoFacade = new DAOFacade($controller->getController());
 			$this->restClient = new RESTClient($controller->getController());			
 		}
 	
@@ -169,7 +196,7 @@
 		 * 
 		 */
 		public function run()
-		{
+		{			
 			while (true)
 			{					
 				try 
@@ -192,14 +219,12 @@
 								// Reset timer for user
 								$userArray[3] = microtime(true);
 								
-								// Get call status for current extension
-								
+								// Get call status for current extension								
 								$extension = $userArray[2]->To;
 								if ($userArray[2]->Target != "") 						
 									$extension = $userArray[2]->Target;						
 								$status = $this->getCallStatus($userArray, $extension);	
 								
-								//var_dump($userArray);						
 								if ($status != null && $status != "null")
 								{								
 									// Has the call status changed? Send new commandObject to client!
@@ -212,8 +237,6 @@
 										// Get commandObject, user and update status
 										// Get then store again to get correct object reference. Don't change this
 										$socket = $userArray[4];
-										//echo ' ********* Socket status:';
-										//var_dump($socket);									
 										$commandObject = $userArray[2];																			
 										$commandObject->Status = $status;
 										$commandObject->Value = array(array($extension));
@@ -342,7 +365,8 @@
 		{
 			// Pass socket object to 2nd line entry if applicable
 			$socket = $this->activeUserList[$index][4];
-			$userId = ($this->activeUserList[$index][0]);
+			$userId = $this->activeUserList[$index][0];
+			$commandObject = $this->activeUserList[$index][2];
 			
 			if (gettype($socket) != "unknown type")
 			{
@@ -353,8 +377,6 @@
 					{
 						$userArray[4] = $socket;
 						$this->activeUserList[$key] = $userArray;
-						//echo "******* socket is now:";
-						//var_dump($this->activeUserList[$key][4]);
 						break;
 					}
 				}
@@ -362,6 +384,9 @@
 			
 			unset($this->activeUserList[$index]);
 			$this->listChanged = true;
+			
+			// Update history for given call			
+			$this->updateHistory($commandObject);
 		}
 		
 		/**
@@ -380,6 +405,28 @@
 					break;
 				}
 			}
+		}
+		
+
+		/**
+		 * Update the history for given call
+		 *
+		 * @param $commandObject
+		 *
+		 */
+		public function updateHistory($commandObject)
+		{
+			// Update history entry in the database
+			$history = new History();
+			$dialledParty = $commandObject->To;
+			if ($commandObject->Target != "")
+				$dialledParty = $commandObject->Target;
+			$history->setUsername($commandObject->User);
+			$history->setDialledParty($dialledParty);
+
+			// Make new connection object since it cannot be referenced from thread 0
+			$connection = $this->daoFacade->getConnection();	
+			$this->daoFacade->getHistoryDAO()->update($history, $connection);
 		}
 	}
 		

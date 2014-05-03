@@ -27,12 +27,26 @@
 		{			
 			$this->controller = $controller;
 			$this->connectionString = $this->getConnectionString();	
-			$this->connection = $this->connect($this->connectionString);			
+			$this->connection = $this->connect($this->connectionString);	
+					
 			$this->userDAO = new UserDAO($this->connection);
 			$this->roleDAO = new RoleDAO($this->connection);
 			$this->historyDAO = new HistoryDAO($this->connection);
 			$this->extensionDAO = new ExtensionDAO($this->connection);
-		}		
+		}	
+
+		/**
+		 * Get the connectio nto the database'
+		 * 
+		 * @return $connection
+		 * 
+		 */
+		public function getConnection()
+		{
+			// Rebuild the connection in case function is called from a thread
+			$this->connection = $this->connect($this->connectionString);
+			return $this->connection;
+		}
 		
 		public function getUserDAO()
 		{
@@ -54,6 +68,13 @@
 			return $this->historyDAO;
 		}
 		
+		/**
+		 * Get the connection settings from the ini file
+		 * and return as PSQL connection string
+		 * 
+		 * @return $connectionString
+		 * 
+		 */
 		private function getConnectionString()
 		{
 			$settingsArray = $this->controller->getSettingsArray();
@@ -69,6 +90,7 @@
 		 * 
 		 * @param $connectString
 		 * @return $connection resource
+		 * 
 		 */
 		private function connect($connectString)
 		{

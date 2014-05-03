@@ -10,8 +10,8 @@
 	Class History
 	{
 		private $dialled_party;
-		private $datetime;
-		private $duration;
+		private $date_from;
+		private $date_to;
 		private $username;
 	
 		public function __construct()
@@ -28,24 +28,24 @@
 			$this->dialled_party = $dialled_party;
 		}
 		
-		public function getDatetime()
+		public function getDateFrom()
 		{
-			return $this->datetime;
+			return $this->date_from;
 		}
 		
-		public function setDatetime($datetime)
+		public function setDateFrom($date_from)
 		{
-			$this->datetime = $datetime;
+			$this->date_from = $date_from;
 		}
 		
-		public function getDuration()
+		public function getDateTo()
 		{
-			return $this->duration;
+			return $this->date_to;
 		}
-	
-		public function setDuration($duration)
+		
+		public function setDateTo($date_to)
 		{
-			$this->duration = $duration;
+			$this->date_to = $date_to;
 		}
 		
 		public function getUsername()

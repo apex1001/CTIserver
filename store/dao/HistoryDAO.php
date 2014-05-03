@@ -51,14 +51,12 @@
 		public function write(History $history)
 		{
 			$dialled_party = $history->getDialledParty();
-			$datetime = $history->getDatetime();
-			$duration = $history->getDuration();
 			$username = $history->getUsername();			
 			
 			$result = pg_query_params(
 					$this->connection,
-					'INSERT INTO history (dialled_party, datetime, duration, username) values ($1, $2, $3, $4)',
-					array($dialled_party, $datetime, $duration, $username));
+					'INSERT INTO history (dialled_party, date_from, username) values ($1, CURRENT_TIMESTAMP, $2)',
+					array($dialled_party, $username));
 
 			if(!$result)
 			{
@@ -72,18 +70,45 @@
 		}
 		
 		/**
+		 * Update the extension object
+		 *
+		 * @param $extension
+		 *
+		 */
+		public function update(History $history, $connection)
+		{
+			$dialled_party = $history->getDialledParty();
+			$username = $history->getUsername();	
+								
+			$result = pg_query_params(
+					$connection,
+					'UPDATE history SET date_to = CURRENT_TIMESTAMP WHERE dialled_party = $1 AND username = $2 AND date_to IS NULL',
+					array($dialled_party, $username));
+		
+			if(!$result)
+			{
+				echo 'Error: object not updated';
+				return null;
+			}
+				
+			pg_free_result($result);
+			return $result;
+		}
+		
+		/**
 		 * Get a list of history objects
 		 *
 		 * @param $username
 		 *
 		 */
-		public function getHistoryList($username)
+		public function getHistoryList($username, $limit = 100)
 		{
 				
 			$result = pg_query_params(
 					$this->connection,
-					'SELECT * FROM history WHERE username = $1',
-					array($username));
+					'SELECT dialled_party, date_from, date_to FROM history WHERE username = $1 ' .
+					'ORDER BY date_from desc LIMIT $2',
+					array($username, $limit));
 				
 			if(!$result)
 			{
@@ -96,7 +121,7 @@
 			
 			for ($i = 0; $i < $rows; $i++)
 			{
-				$resultArray[] = pg_fetch_object($result, $i, "History");
+				$resultArray[] = pg_fetch_row($result, $i);
 			}
 					
 			pg_free_result($result);			
