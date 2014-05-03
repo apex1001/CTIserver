@@ -55,7 +55,7 @@
 			
 			$result = pg_query_params(
 					$this->connection,
-					'INSERT INTO history (dialled_party, date_from, username) values ($1, CURRENT_TIMESTAMP, $2)',
+					'INSERT INTO history (dialled_party, date_from, date_to, username) values ($1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, $2)',
 					array($dialled_party, $username));
 
 			if(!$result)
