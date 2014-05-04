@@ -84,6 +84,10 @@
 						case "getHistory":
 							$this->getUserHistory($commandObject, $user);
 							break;
+						
+						case "getAdminUrl":
+							$this->getAdminUrl($commandObject, $user);
+							break;							
 					}
 				}				
 			}			
@@ -244,7 +248,21 @@
 			$this->sendCommand($commandObject, $user);			
 		}
 		
+		/**
+		 * Get the admin page url
+		 *
+		 * @param $commandObject
+		 * @param $user
+		 */
+		private function getAdminUrl($commandObject, $user)
+		{			
+			$commandObject->Command = "adminUrl";
+			$commandObject->Value = array(array($this->settingsArray['adminUrl']));	
 		
+			// Send to client
+			$this->sendCommand($commandObject, $user);
+		}
+				
 		/**
 		 * Read the settings file and apply values
 		 * 

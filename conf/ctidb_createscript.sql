@@ -23,8 +23,8 @@ CREATE TABLE extensions (
 CREATE TABLE history ( 
 	id BIGSERIAL NOT NULL,      
 	dialled_party varchar(20) NOT NULL,
-	datetime timestamp NOT NULL,
-	duration interval NOT NULL,
+	date_from timestamp NOT NULL,
+	date_to timestamp,
 	username varchar(20) NOT NULL,
    	primary key (id)
 );
