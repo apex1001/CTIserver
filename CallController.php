@@ -43,6 +43,14 @@
 			if (strpos($commandObject->From, '0') == 0 )
 			{
 				$xmlResponse = $this->restClient->callSetupExternal($commandObject);
+				$commandObject->Status = "Terminated Dialog";
+				$commandObject->Value = array(array($commandObject->To));
+				$this->sendCommand($commandObject, $user, $user->socket);
+				
+				// Write history for given call
+				$this->writeHistory($commandObject);
+				
+				return;
 			}
 			else
 			{
@@ -69,8 +77,6 @@
 
 			// Write history for given call
 			$this->writeHistory($commandObject);
-			
-
 		}
 		
 		/**
@@ -144,6 +150,7 @@
 		 * Returns the Server controller instance
 		 * 
 		 * @return $serverController
+		 * 
 		 */
 		public function getController()
 		{
@@ -154,6 +161,7 @@
 		 * Write history for given call
 		 * 
 		 * @param $commandObject
+		 * 
 		 */
 		public function writeHistory($commandObject)
 		{

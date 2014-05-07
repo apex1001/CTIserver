@@ -82,8 +82,10 @@
 								
 			$result = pg_query_params(
 					$connection,
-					'UPDATE history SET date_to = CURRENT_TIMESTAMP WHERE dialled_party = $1 AND username = $2 AND date_to IS NULL',
-					array($dialled_party, $username));
+					'UPDATE history SET date_to = CURRENT_TIMESTAMP WHERE id = ' .
+						'(SELECT id from history where dialled_party = $1 AND ' .
+							'username = $2 AND date_to = date_from ' .
+							'ORDER BY id DESC limit 1)', array($dialled_party, $username));
 		
 			if(!$result)
 			{
