@@ -92,6 +92,36 @@
 			pg_free_result($result);
 			return $result;
 		}
+		
+		/**
+		 * Get a list of role objects
+		 *
+		 *
+		 */
+		public function getRoleList()
+		{
+		
+			$result = pg_query_params(
+					$this->connection,
+					'SELECT * from roles', array());
+		
+			if(!$result)
+			{
+				echo 'Error: objects not found';
+				return null;
+			}
+				
+			$resultArray = array();
+			$rows =  pg_num_rows($result);
+				
+			for ($i = 0; $i < $rows; $i++)
+			{
+			$resultArray[] = pg_fetch_row($result, $i);
+			}
+				
+			pg_free_result($result);
+			return $resultArray;
+		}
 	}
 	
 	

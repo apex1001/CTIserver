@@ -1,0 +1,37 @@
+body, html
+{ 
+	font-family: 'Open Sans', sans-serif;
+	font-size: 14px; 
+	margin: 5px;
+	background-color: gray;
+}
+
+form
+{
+	display: inline;
+}
+
+fieldset
+{
+	background-color: white;
+}
+
+h1
+{
+	text-indent: 10px;	
+	color: #eef;
+}
+
+legend 
+{
+	padding: 2px 5px 2px 5px;
+	color: white;
+	background-color: #0cf;
+}
+
+td 
+{
+	padding: 0px 10px 0px 10px;
+	font-family: 'Open Sans', sans-serif;
+	font-size: 14px; 
+}
