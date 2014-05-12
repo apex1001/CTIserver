@@ -1,7 +1,8 @@
 <?php
 	
 	require_once('../store/dao/DAOFacade.php');
-
+	require_once('../store/domain/User.php');
+	
 	// Init some variables
 	$DAOFacade = new DAOFacade(new Controller());
 	session_start();	
@@ -12,7 +13,7 @@
 	$searchResult = null;
 	
 	// Start the main admin routine
-	startAdmin($userName, $userNameSearch, $DAOFacade, $action);
+	startAdmin();
 	
 	/**
 	 * The admin page routine
@@ -20,13 +21,29 @@
 	 * @param $userName
 	 * @param $DAOFacade
 	 */
-	function startAdmin($userName, $userNameSearch, $DAOFacade, $action)
+	function startAdmin()
 	{		
+		global $action;
+		global $DAOFacade;
+		global $userNameSearch;
+		
 		// Check for a given user to search, if present get results
-		if ($userNameSearch != "" && $action = "searchUser")
+		if ($action == "searchUser" && $userNameSearch != "")
 		{
 			global $searchResult;			
 			$searchResult = getUserList($userNameSearch, $DAOFacade);				
+		}
+		
+		// Delete the given user
+		if ($action == "Delete")
+		{			
+			deleteUser($_POST['userName']);
+		}
+		
+		// Clean the database history
+		if ($action == "cleanHistory")
+		{			
+			$DAOFacade->getHistoryDAO()->cleanHistory();
 		}
 	}
 	
@@ -42,6 +59,30 @@
 	{
 		$result = $DAOFacade->getUserDAO()->getUserList($userNameSearch);
 		return $result;
+	}
+	
+	/**
+	 * Deletes a user from the database, 
+	 * including extensions and history
+	 * 
+	 * @param $userName
+	 * 
+	 */
+	function deleteUser($userName)
+	{
+		global $DAOFacade;
+		
+		$user = new User();
+		$user->setUsername($userName);
+		
+		// Delete extensions
+		$DAOFacade->getExtensionDAO()->deleteAll($userName);
+		
+		// Delete history
+		$DAOFacade->getHistoryDAO()->delete($userName);
+		
+		// Delete user
+		$DAOFacade->getUserDAO()->delete($user);
 	}
 	
 	/**
@@ -121,13 +162,13 @@
 									<td>' . $user[1] . '&nbsp;&nbsp;</td>
 									<td>
 	 									<form action="editUser.php" method="post">
-		 									<input type="submit" name="edit" value="Edit" />
+		 									<input type="submit" name="action" value="Edit" />
 		 									<input type="hidden" name="userName" value="' . $user[0] . '" />
 										</form>
 	 								</td>
 									<td>
-										<form onsubmit="confirmDelete()">
-											<input type="submit" name="delete" value="Delete" /> 
+										<form action="adminMain.php" method="post" onsubmit="return confirm(\'Are you sure?\');">
+											<input type="submit" name="action" value="Delete" /> 
 											<input type="hidden" name="userName" value="' . $user[0] . '" />
 										</form>
 	 								</td>
@@ -145,13 +186,14 @@
 				<legend><b>Database maintenance</b></legend>
 				<text><br/>
 					To clean the database just press the clean button. This removes all call history records up to 
-					one month from the present. If you need to do this often maybe you should schedule an SQL cleanup 
-					job on the history table.
+					one month before the current date. If you need to do this often you might want to schedule an SQL 
+					cleanup job on the history table.
 				</text> 
 				<br/>
 				<br/>
-				<form action="cleanDb.php" method="post" >					
+				<form action="adminMain.php" method="post" >					
 					<input type="submit" value="Clean database" />
+					<input type="hidden" name="action" value="cleanHistory" />
 				</form>	
 			</fieldset>		
 		</body>

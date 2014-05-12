@@ -14,6 +14,8 @@ form
 fieldset
 {
 	background-color: white;
+	margin: 5px 5px 5px 5px;
+	padding: 10px 10px 10px 10px;
 }
 
 h1
@@ -34,4 +36,9 @@ td
 	padding: 0px 10px 0px 10px;
 	font-family: 'Open Sans', sans-serif;
 	font-size: 14px; 
+}
+
+input, select
+{
+	margin-left: -1px;
 }

@@ -126,6 +126,30 @@
 		}
 		
 		/**
+		 * Delete all the extensions of a user
+		 *
+		 * @param $username
+		 *
+		 */
+		public function deleteAll($username)
+		{
+			
+			$result = pg_query_params(
+					$this->connection,
+					'DELETE FROM extensions WHERE username = $1',
+					array($username));
+		
+			if(!$result)
+			{
+				echo 'Error: objects not deleted';
+				return null;
+			}
+				
+			pg_free_result($result);
+			return $result;
+		}
+		
+		/**
 		 * Get a list of extension objects
 		 *
 		 * @param $username

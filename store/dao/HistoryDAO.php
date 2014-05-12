@@ -70,6 +70,29 @@
 		}
 		
 		/**
+		 * Delete the history object
+		 *
+		 * @param $username
+		 *
+		 */
+		public function delete($username)
+		{
+			$result = pg_query_params(
+					$this->connection,
+					'DELETE FROM history WHERE username = $1',
+					array($username));
+		
+			if(!$result)
+			{
+				echo 'Error: object not deleted';
+				return null;
+			}
+				
+			pg_free_result($result);
+			return $result;
+		}
+		
+		/**
 		 * Update the extension object
 		 *
 		 * @param $extension
@@ -128,6 +151,17 @@
 					
 			pg_free_result($result);			
 			return $resultArray;
+		}
+		
+		/**
+		 * Clean the history up to 1 month before now.
+		 * 
+		 */
+		public function cleanHistory()
+		{
+			$result = pg_query(
+					$this->connection,
+					'delete from history where date_from < (CURRENT_TIMESTAMP - interval \'1 month\')');
 		}
 	}
 	
