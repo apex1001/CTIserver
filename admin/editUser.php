@@ -12,7 +12,9 @@
 	@$action = $_POST['action'];
 	
 	// Start the main edit routine
-	startUserEdit();
+	if ($_SESSION['authorized'])
+		startUserEdit();
+	else header('Location: ../www/index.php');
 	
 	/**
 	 * The user edit routine

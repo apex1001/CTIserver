@@ -13,13 +13,14 @@
 	// Init some variables
 	$DAOFacade = new DAOFacade(new Controller());
 		
-	//@$userName = $_POST['username'];
-	$userName = "admin";
+	@$userName = $_POST['username'];
+	//$userName = "admin";
 	
 	if (checkIsAdmin($userName, $DAOFacade))
 	{
 		session_start();
 		$_SESSION['userName'] = $userName;
+		$_SESSION['authorized'] = true;
 		header('Location: ../admin/adminMain.php');		
 	}
 	else 

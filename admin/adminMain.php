@@ -13,7 +13,9 @@
 	$searchResult = null;
 	
 	// Start the main admin routine
-	startAdmin();
+	if ($_SESSION['authorized'])
+		startAdmin();
+	else header('Location: ../www/index.php');
 	
 	/**
 	 * The admin page routine
