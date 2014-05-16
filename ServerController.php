@@ -11,6 +11,7 @@
 	 */
 
 	require_once('./CallController.php');
+	require_once('./CryptoModule.php');
 	require_once('./library/websocket/websockets2.php');
 	require_once('./store/domain/CommandObject.php');
 	require_once('./store/domain/User.php');
@@ -27,13 +28,16 @@
 		private $daoFacade;
 		private $settingsArray;
 		private $userList;
+		private $cryptoModule;
+		private $cryptoActivated = true;
 		
 		public function __construct($url, $port)
 		{
 			parent::__construct($url, $port);
 			$this->readSettings();
  			$this->callController = new CallController($this);
- 			$this->daoFacade = new DAOFacade($this);	
+ 			$this->daoFacade = new DAOFacade($this);
+ 			$this->cryptoModule = $this->getCryptoModule();	 								  
  		}	
 		
 		/**
@@ -45,6 +49,11 @@
 		 */		
 		protected function process ($user, $message) 
 		{			
+			if ($this->cryptoModule != null)
+			{
+				$message = $this->cryptoModule->decryptRJ128($message);
+			}
+			
 			echo 'Received message ' . $message . ' from ' . $user->socket . "\r\n";
 			if ($message !="ping")
 			{
@@ -123,9 +132,17 @@
 		 */
 		public function sendCommand($commandObject, $user)
 		{		
-			$message = json_encode($commandObject);
+			$message = json_encode($commandObject);			
+			echo 'Sending command to user :' . $user->id . " \r\n" . $message . " \r\n";		
+			if ($this->cryptoActivated)
+			{
+				// If there is no cryptoModule, get a new one				
+				if ($this->cryptoModule == null)
+					$this->cryptoModule = $this->getCryptoModule();					
+				$message = $this->cryptoModule->encryptRJ128($message);
+			}
 			$this->send($user, $message);
-			echo 'Sending command to user :' . $user->id . " \r\n" . $message . " \r\n";	
+				
 		}	
 
 		/**
@@ -292,6 +309,17 @@
 		{
 			return $this->daoFacade;
 		}
+		
+		/**
+		 * Create a new cryptomodule
+		 * 
+		 * @return CryptoModule
+		 */
+		public function getCryptoModule()
+		{
+			$this->cryptoActivated = true;
+			return new CryptoModule($this->settingsArray['sKy'], $this->settingsArray['sIV']);
+		}		
 		
 		/**
 		 * Create an extension object from array item

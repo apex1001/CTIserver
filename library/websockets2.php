@@ -232,7 +232,7 @@ abstract class WebSocketServer {
     // Done verifying the _required_ headers and optionally required headers.
 
     if (isset($handshakeResponse)) {
-      socket_write($user->socket,$handshakeResponse,strlen($handshakeResponse));
+      @socket_write($user->socket,$handshakeResponse,strlen($handshakeResponse));
       $this->disconnect($user->socket);
       return;
     }
@@ -252,7 +252,7 @@ abstract class WebSocketServer {
     $extensions = (isset($headers['sec-websocket-extensions'])) ? $this->processExtensions($headers['sec-websocket-extensions']) : "";
 
     $handshakeResponse = "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: $handshakeToken$subProtocol$extensions\r\n";
-    socket_write($user->socket,$handshakeResponse,strlen($handshakeResponse));
+    @socket_write($user->socket,$handshakeResponse,strlen($handshakeResponse));
     $this->connected($user);
   }
 
@@ -418,7 +418,7 @@ abstract class WebSocketServer {
 
     if ($pongReply) {
       $reply = $this->frame($payload,$user,'pong');
-      socket_write($user->socket,$reply,strlen($reply));
+      @socket_write($user->socket,$reply,strlen($reply));
       return false;
     }
     if (extension_loaded('mbstring')) {

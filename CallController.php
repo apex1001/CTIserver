@@ -193,8 +193,7 @@
 		public function __construct($controller)
 		{
 			$this->activeUserList = new ActiveUserList();
-			$this->controller = $controller;
-			$this->serverController = $controller->getController();
+			$this->controller = $controller;				
 			$this->daoFacade = new DAOFacade($controller->getController());
 			$this->restClient = new RESTClient($controller->getController());			
 		}
@@ -210,7 +209,7 @@
 				try 
 				{				
 					//echo count($this->activeUserList);			
-					//sleep(1);
+					//sleep(1);					
 					if (count($this->activeUserList) > 0)
 					{						
 						foreach ($this->activeUserList as $key => $userArray)
