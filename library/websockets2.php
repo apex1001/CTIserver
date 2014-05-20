@@ -121,7 +121,7 @@ abstract class WebSocketServer {
               else {			  
                 do {
                   $numByte = @socket_recv($socket,$buffer,$this->maxBufferSize,MSG_PEEK);
-                  if ($numByte > 0) {
+                  if ($numByte > 0 && $numByte != null) { // added null check
                     $numByte = @socket_recv($socket,$buffer,$this->maxBufferSize,4); // Changed. Was 0, causes buffer errors!
                     if (($message = $this->deframe($buffer, $user)) !== FALSE) {
                       if($user->hasSentClose) {

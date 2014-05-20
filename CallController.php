@@ -106,10 +106,16 @@
 		public function callTransfer($commandObject, $user)
 		{
 			if ($commandObject != null && $commandObject->Command == 'transfer')
-			{				
+			{							
+				// Transfer the call
 				$xmlResponse = $this->restClient->callTransfer($commandObject);
 				$xmlStripped = str_replace ("-","", $xmlResponse);
-				$response = simplexml_load_string($xmlStripped);					
+				$response = simplexml_load_string($xmlStripped);								
+
+				// Terminate the original call if it was a two line transfer
+				sleep(6);				
+				$commandObject->To = $commandObject->Target;
+				$xmlResponse = $this->restClient->callTerminate($commandObject);				
 			}	
 			$this->updateThread->removeUserByObject($user);
 		}
@@ -141,7 +147,7 @@
 		 * 
 		 */
 		public function sendCommand($commandObject, $user, $socket)
-		{			
+		{				
 			$user->socket = $socket;
 			$this->controller->sendCommand($commandObject, $user);						
 		} 
@@ -248,10 +254,10 @@
 										$commandObject->Status = $status;
 										$commandObject->Value = array(array($extension));
 										$userArray[2] = $commandObject;
-										$userArray[4] = $socket;
+										//$userArray[4] = $socket;
 										
 										// If invalid socket, get it from original user object.
-										if (gettype($socket) == "unknown type")
+										if (gettype($socket) == "unknown type" || $socket == null)
 										{
 											$socket = $this->getSocketById($userArray[0]);
 										}
@@ -297,7 +303,8 @@
 				$response = @simplexml_load_string($xmlStripped);
 				if ($response != null && property_exists($response, 'dialog') && count($response) > 0)
 				{
-					if (is_array($response->dialog)) {
+					if (is_array($response->dialog)) 
+					{
 						// Get first record of the dialog array matching the extension
 						foreach ($response->dialog as $dialogEntry)
 						{
@@ -327,11 +334,11 @@
 		 * @return $socket obejct
 		 * 
 		 */
-		private function getSocketById($id)
+		public function getSocketById($id)
 		{
 			foreach( $this->activeUserList as $item)
 			{
-				if ($item[0] == $id && gettype($item[4]) != "unknown type")
+				if ($item[0] == $id && gettype($item[4]) != "unknown type" && $item[4] != null)
 				{
 					return $item[4];
 				}
@@ -375,25 +382,25 @@
 			$userId = $this->activeUserList[$index][0];
 			$commandObject = $this->activeUserList[$index][2];
 			
-			if (gettype($socket) != "unknown type")
+			if (gettype($socket) != "unknown type" && $socket != null)
 			{
 				// Search for the same id with socket type unknown				
 				foreach ($this->activeUserList as $key => $userArray)
 				{
-					if ($userArray[0] == $userId && gettype($userArray[4]) == "unknown type")
+					if ($userArray[0] == $userId && (gettype($userArray[4]) == "unknown type" || $userArray[4] == null))
 					{
 						$userArray[4] = $socket;
 						$this->activeUserList[$key] = $userArray;
 						break;
 					}
 				}
-			}		
-			
+			}
+						
 			unset($this->activeUserList[$index]);
 			$this->listChanged = true;
 			
 			// Update history for given call			
-			$this->updateHistory($commandObject);
+			$this->updateHistory($commandObject);				
 		}
 		
 		/**

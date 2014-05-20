@@ -149,7 +149,7 @@
 				echo 'Transferring call from extension '. $to . ' to extension ' . $target . '.....'. "\r\n";				
 
 				// Set url for A and B party, call via INVITE
-				$url = "http://" . $this->sipxHost . ":6667/callcontroller/" . $from . "/" . $to . "?target=" . $target . "&action=transfer";
+				$url = "http://" . $this->sipxHost . ":6667/callcontroller/" . $from . "/" . $to . "?target=" . $target . "&action=transfer&timeout=20";
 				echo 'Execute command: ' . $url . "\r\n";
 				// Init session
 				$ch = curl_init();

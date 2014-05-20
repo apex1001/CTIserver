@@ -53,7 +53,7 @@
 			{
 				$message = $this->cryptoModule->decryptRJ128($message);
 			}
-			
+						
 			echo 'Received message ' . $message . ' from ' . $user->socket . "\r\n";
 			if ($message !="ping")
 			{
@@ -141,8 +141,7 @@
 					$this->cryptoModule = $this->getCryptoModule();					
 				$message = $this->cryptoModule->encryptRJ128($message);
 			}
-			$this->send($user, $message);
-				
+			$this->send($user, $message);							
 		}	
 
 		/**
