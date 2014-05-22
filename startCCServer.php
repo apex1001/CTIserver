@@ -11,7 +11,7 @@
 		$port = "7777";
 	
 		// Start server
-		echo 'Starting Call Control Server on ' . $url . ' port ' . $port . "\r\n";		
+		echo '-- Starting Call Control Server on ' . $url . ' port ' . $port . "\r\n";		
 		$serverController = new ServerController($url, $port);		
 		
 		try

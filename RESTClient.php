@@ -46,7 +46,7 @@
 				if ($commandObject->Target != "")
 					$to = $commandObject->Target;
 				
-				echo 'Calling from extension '. $from . ' to extension ' . $to . '.....'. "\r\n";
+				echo '-- Calling from extension '. $from . ' to extension ' . $to . '.....'. "\r\n";
 				
 				// Set url for A and B party, call via INVITE
 				$url = "http://" . $this->sipxHost . ":6667/callcontroller/" . $from . "/" . $to . 
@@ -54,7 +54,7 @@
 				echo 'Execute command: ' . $url . "\r\n"; 
 				
 				// Send the request to the queue
-				return $this->addConnectionQueue($url, $from, $pin, "POST");				
+				return $this->connectRest($url, $from, $pin, "POST");				
 			}
 			catch (Exception $e) 
 			{
@@ -79,7 +79,7 @@
 				$to = $commandObject->To;
 				$pin = $commandObject->Pin;
 		
-				echo 'Calling from extension '. $from . ' to extension ' . $to . '.....'. "\r\n";
+				echo '-- Calling from extension '. $from . ' to extension ' . $to . '.....'. "\r\n";
 		
 				// Set url for A and B party, call via INVITE
 				$url = "http://" . $this->sipxHost . ":6667/callcontroller/" . $from . "/" . $to .
@@ -87,7 +87,7 @@
 				echo 'Execute command: ' . $url . "\r\n";
 				
 				// Send the request to the queue
-				return $this->addConnectionQueue($url, $this->agentExtension, $this->agentPin, "POST");		
+				return $this->connectRest($url, $this->agentExtension, $this->agentPin, "POST");		
 			}
 			catch (Exception $e)
 			{
@@ -126,14 +126,14 @@
 				$target = $commandObject->Target;
 				$pin = $commandObject->Pin;			
 				
-				echo 'Transferring call from extension '. $to . ' to extension ' . $target . '.....'. "\r\n";				
+				echo '-- Transferring call from extension '. $to . ' to extension ' . $target . '.....'. "\r\n";				
 
 				// Set url for A and B party, call via INVITE
 				$url = "http://" . $this->sipxHost . ":6667/callcontroller/" . $from . "/" . $to . "?target=" . $target . "&action=transfer";
 				echo 'Execute command: ' . $url . "\r\n";
 				
 				// Send the request to the queue
-				return $this->addConnectionQueue($url, $from, $pin, "POST");	
+				return $this->connectRest($url, $from, $pin, "POST");	
 			}
 			catch (Exception $e)
 			{
@@ -173,7 +173,7 @@
 				$url = "http://" . $this->sipxHost . ":6667/callcontroller/" . $from . "/" . $to;
 				
 				// Send the request to the queue
-				return $this->addConnectionQueue($url, $from, $pin, "GET");
+				return $this->connectRest($url, $from, $pin, "GET");
 			}
 			catch (Exception $e)
 			{
@@ -207,7 +207,7 @@
 		 * @param $method
 		 * @return $mixed
 		 */
-		private function addConnectionQueue($url, $from, $pin, $method)
+		private function connectRest($url, $from, $pin, $method)
 		{
 			// Init session
 			$ch = curl_init();

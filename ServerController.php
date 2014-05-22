@@ -30,12 +30,14 @@
 		private $userList;
 		private $cryptoModule;
 		private $cryptoActivated = true;
+		private $numRequest;
 		
 		public function __construct($url, $port)
 		{
 			parent::__construct($url, $port);
 			$this->readSettings();
- 			$this->callController = new CallController($this);
+			$this->numRequest = $this->settingsArray['numRequest'];
+ 			$this->callController = new CallController($this, $this->numRequest);
  			$this->daoFacade = new DAOFacade($this);
  			$this->cryptoModule = $this->getCryptoModule();	 								  
  		}	
@@ -53,8 +55,9 @@
 			{
 				$message = $this->cryptoModule->decryptRJ128($message);
 			}
-						
-			echo 'Received message ' . $message . ' from ' . $user->socket . "\r\n";
+
+			$message = $this->cleanMsg($message);
+			echo '-- Received message ' . $message . ' from ' . $user->socket . "\r\n";
 			if ($message !="ping")
 			{
 				$message = $this->cleanMsg($message);
@@ -114,7 +117,7 @@
 		 */
 		protected function connected ($user) 
 		{
-			echo 'Connection opened to: ' . $user->socket . " " . $user->id . "\r\n";
+			echo '-- Connection opened to: ' . $user->socket . " " . $user->id . "\r\n";
 		}
 		
 		/**
@@ -125,7 +128,7 @@
 		 */	
 		protected function closed ($user) 
 		{
-			echo 'Connection closed to: ' . $user->socket . " " . $user->id . "\r\n";
+			echo '-- Connection closed to: ' . $user->socket . " " . $user->id . "\r\n";
 		}	
 		
 		/**
@@ -137,7 +140,7 @@
 		public function sendCommand($commandObject, $user)
 		{		
 			$message = json_encode($commandObject);			
-			echo 'Sending command to user :' . $user->id . " \r\n" . $message . " \r\n";		
+			echo '-- Sending command to user :' . $user->id . " \r\n" . $message . " \r\n";		
 			if ($this->cryptoActivated)
 			{
 				// If there is no cryptoModule, get a new one				
@@ -360,7 +363,9 @@
 		{
 			$regex = '/[\x01-\x1F\x7F-\xFF]/';
 			$message = preg_replace($regex, '', $message);
-			return substr($message,0,strrpos($message, "}")+1);
+			if (substr($message,0,1) == "{")
+				$message = substr($message,0,strrpos($message, "}")+1);
+			return $message;
 		}
 		
 		/**
