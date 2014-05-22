@@ -96,7 +96,11 @@
 						
 						case "getAdminUrl":
 							$this->getAdminUrl($commandObject, $user);
-							break;							
+							break;
+
+						case "checkExtension":
+							$this->checkExtension($commandObject, $user);
+							break;
 					}
 				}				
 			}			
@@ -149,6 +153,7 @@
 		 * 
 		 * @param $commandObject
 		 * @param $user (websocket user!)
+		 * 
 		 */
 		private function getUserSettings($commandObject, $user)
 		{
@@ -194,6 +199,7 @@
 		 *
 		 * @param $commandObject
 		 * @param $user (websocket user!)
+		 * 
 		 */
 		private function putUserSettings($commandObject, $user)
 		{
@@ -230,6 +236,7 @@
 		 *
 		 * @param $commandObject
 		 * @param $user (websocket user!)
+		 * 
 		 */
 		private function deleteUserSettings($commandObject, $user)
 		{
@@ -248,6 +255,7 @@
 		 *
 		 * @param $commandObject
 		 * @param $user
+		 * 
 		 */
 		private function getUserHistory($commandObject, $user)
 		{
@@ -269,6 +277,7 @@
 		 *
 		 * @param $commandObject
 		 * @param $user
+		 * 
 		 */
 		private function getAdminUrl($commandObject, $user)
 		{			
@@ -292,6 +301,7 @@
 		 * Return the current settings array
 		 * 
 		 * @return settingsArray
+		 * 
 		 */
 		public function getSettingsArray()
 		{
@@ -313,6 +323,7 @@
 		 * Create a new cryptomodule
 		 * 
 		 * @return CryptoModule
+		 * 
 		 */
 		public function getCryptoModule()
 		{
@@ -325,6 +336,7 @@
 		 * 
 		 * @param $extensionItem in array format
 		 * @return $extension object
+		 * 
 		 */
 		private function createExtension($extensionItem)
 		{
@@ -342,12 +354,27 @@
 		 * 
 		 * @param $message
 		 * @return $cleanedMessage
+		 * 
 		 */
 		private function cleanMsg($message)
 		{
 			$regex = '/[\x01-\x1F\x7F-\xFF]/';
 			$message = preg_replace($regex, '', $message);
 			return substr($message,0,strrpos($message, "}")+1);
+		}
+		
+		/**
+		 * Check the extension
+		 * 
+		 * @param commandobject
+		 * @param user
+		 * @return boolean true if valid
+		 */
+		private function checkExtension($commandObject, $user)
+		{
+			$result = $this->callController->checkExtension($commandObject, $user);
+			$commandObject->Value = array(array(var_export($result, true)));
+			$this->sendCommand($commandObject, $user);
 		}
 	}
 	

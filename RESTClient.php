@@ -15,6 +15,7 @@
 		private $agentExtension;
 		private $agentPin;	
 		private $terminateExtension;
+		private $connectionQueue;
 		
 		public function __construct($controller)
 		{
@@ -32,14 +33,16 @@
 		 * @return xml document
 		 * 
 		 */
-		function callSetup ($commandObject)
+		function callSetup($commandObject, $timeout = 30)
 		{			
 			try
 			{
+				// Get all the credentials
 				$from = $commandObject->From;
 				$to = $commandObject->To;
 				$pin = $commandObject->Pin;
 				
+				// If target is set, there is a 2nd line
 				if ($commandObject->Target != "")
 					$to = $commandObject->Target;
 				
@@ -47,24 +50,11 @@
 				
 				// Set url for A and B party, call via INVITE
 				$url = "http://" . $this->sipxHost . ":6667/callcontroller/" . $from . "/" . $to . 
-					   "?sipMethod=INVITE&subject=c2c&resultCacheTime=5";
+					   "?sipMethod=INVITE&subject=c2c&resultCacheTime=5&timeout=" . $timeout;
 				echo 'Execute command: ' . $url . "\r\n"; 
-				// Init session
-				$ch = curl_init();	
-						
-				// Set the options, use A/from credentials!
-				curl_setopt($ch, CURLOPT_URL, $url);
-				curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
-				curl_setopt($ch, CURLOPT_POST, 1);
-				curl_setopt($ch, CURLOPT_USERPWD, $from.":".$pin);	
-				curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 				
-				// Execute the command	
-				$result = curl_exec($ch);
-				//echo $result;		
-				curl_close($ch);	
-				return $result;	
-				
+				// Send the request to the queue
+				return $this->addConnectionQueue($url, $from, $pin, "POST");				
 			}
 			catch (Exception $e) 
 			{
@@ -80,10 +70,11 @@
 		 * @return xml document
 		 *
 		 */
-		function callSetupExternal ($commandObject)
+		function callSetupExternal($commandObject)
 		{
 			try
 			{
+				// Get all the credentials
 				$from = $commandObject->From;
 				$to = $commandObject->To;
 				$pin = $commandObject->Pin;
@@ -94,22 +85,9 @@
 				$url = "http://" . $this->sipxHost . ":6667/callcontroller/" . $from . "/" . $to .
 				"?agent=" . $this->agentExtension . "&sipMethod=INVITE&subject=c2c&resultCacheTime=5";
 				echo 'Execute command: ' . $url . "\r\n";
-				// Init session
-				$ch = curl_init();
-		
-				// Set the options, use A/from credentials!
-				curl_setopt($ch, CURLOPT_URL, $url);
-				curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
-				curl_setopt($ch, CURLOPT_POST, 1);
-				curl_setopt($ch, CURLOPT_USERPWD, $this->agentExtension.":".$this->agentPin);
-				curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-		
-				// Execute the command
-				$result = curl_exec($ch);
-				//echo $result;
-				curl_close($ch);
-				return $result;
-		
+				
+				// Send the request to the queue
+				return $this->addConnectionQueue($url, $this->agentExtension, $this->agentPin, "POST");		
 			}
 			catch (Exception $e)
 			{
@@ -122,6 +100,7 @@
 		 * 
 		 * @param commandObject
 		 * @return xml document
+		 * 
 		 */
 		public function callTerminate($commandObject)
 		{
@@ -137,10 +116,11 @@
 		 * @return xml document
 		 *
 		 */
-		public function callTransfer ($commandObject)
+		public function callTransfer($commandObject)
 		{
 			try
 			{				
+				// Get all the credentials
 				$from = $commandObject->From;
 				$to = $commandObject->To;
 				$target = $commandObject->Target;
@@ -149,24 +129,11 @@
 				echo 'Transferring call from extension '. $to . ' to extension ' . $target . '.....'. "\r\n";				
 
 				// Set url for A and B party, call via INVITE
-				$url = "http://" . $this->sipxHost . ":6667/callcontroller/" . $from . "/" . $to . "?target=" . $target . "&action=transfer&timeout=20";
+				$url = "http://" . $this->sipxHost . ":6667/callcontroller/" . $from . "/" . $to . "?target=" . $target . "&action=transfer";
 				echo 'Execute command: ' . $url . "\r\n";
-				// Init session
-				$ch = curl_init();
-		
-				// Set the options, use A/from credentials!
-				curl_setopt($ch, CURLOPT_URL, $url);
-				curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
-				curl_setopt($ch, CURLOPT_POST, 1);
-				curl_setopt($ch, CURLOPT_USERPWD, $from.":".$pin);
-				curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-		
-				// Execute the command
-				$result = curl_exec($ch);
-				//echo $result;
-				curl_close($ch);
-				return $result;
-		
+				
+				// Send the request to the queue
+				return $this->addConnectionQueue($url, $from, $pin, "POST");	
 			}
 			catch (Exception $e)
 			{
@@ -181,49 +148,82 @@
 		 * @return xml document
 		 *
 		 */
-		public function getStatus ($commandObject)
+		public function getStatus($commandObject)
 		{				
 			try
 			{
+				// Get all the credentials
 				$from = $commandObject->From;
 				$pin = $commandObject->Pin;
 				$to = $commandObject->To;
 				
+				// If target is set, there is a 2nd line
 				if ($commandObject->Target != "")
 				{
 					$to = $commandObject->Target;
 				}
 				
-				if (strpos($commandObject->From, '0') == 0 )
-				{
-					$from = $this->agentExtension;
-					$pin = $this->agentPin;
-				}					
+// 				if (strpos($commandObject->From, '0') == 0 )
+// 				{
+// 					$from = $this->agentExtension;
+// 					$pin = $this->agentPin;
+// 				}					
 								
-				// Set url for A and B party, call via INVITE
+				// Set url for A and B party, get status info
 				$url = "http://" . $this->sipxHost . ":6667/callcontroller/" . $from . "/" . $to;
-				//echo 'Execute command: ' . $url .  "\r\n";
-					
-				// Init session
-				$ch = curl_init();
 				
-				// Set the options, use 'from' credentials!
-				curl_setopt($ch, CURLOPT_URL, $url);
-				curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
-				curl_setopt($ch, CURLOPT_USERPWD, $from.":".$pin);
-				curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-				
-				// Execute the command
-				$result = curl_exec($ch);
-				curl_close($ch);
-				//echo $result;
-				return $result;
-					
+				// Send the request to the queue
+				return $this->addConnectionQueue($url, $from, $pin, "GET");
 			}
 			catch (Exception $e)
 			{
 				echo $e->getMessage();
-			}
+			}		
+
+		}
+		
+		/**
+		 * Check if a extension/pin is valid
+		 *
+		 *
+		 * @param commandObject
+		 * @return xml document
+		 * 
+		 */
+		public function checkExtension($commandObject)
+		{
+			// Try a call on the terminateExtension
+			$commandObject->To = $this->terminateExtension;
+			return $this->callSetup($commandObject, 1);
+		}
+		
+		
+		/**
+		 * ConnectionQueue for querying the REST interface
+		 * 
+		 * @param $url
+		 * @param $from
+		 * @param $pin
+		 * @param $method
+		 * @return $mixed
+		 */
+		private function addConnectionQueue($url, $from, $pin, $method)
+		{
+			// Init session
+			$ch = curl_init();
+			
+			// Set the cURL options
+			curl_setopt($ch, CURLOPT_URL, $url);
+			curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
+			curl_setopt($ch, CURLOPT_USERPWD, $from.":".$pin);			
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+			if ($method == "POST")
+				curl_setopt($ch, CURLOPT_POST, 1);
+			
+			// Execute the command
+			$result = curl_exec($ch);
+			curl_close($ch);
+			return $result;		
 		}
 	}
 

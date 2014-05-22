@@ -181,7 +181,22 @@
 		
 			$this->controller->getDaoFacade()->getHistoryDAO()->write($history);
 		}
-
+		
+		/**
+		 * Check the extension
+		 *
+		 * @param commandobject
+		 * @param user
+		 * @return boolean true if valid
+		 * 
+		 */
+		public function checkExtension($commandObject, $user)
+		{
+			$extension = $commandObject->From;
+			$response = strtolower($this->restClient->checkExtension($commandObject));
+			//echo $response;
+			return ($response != "pin mismatch" && $response != "user not found " . $extension );			
+		}
 	}
 	
 	/**
@@ -363,6 +378,7 @@
 		 * Set the active user list
 		 * 
 		 * @param $activeUserList
+		 * 
 		 */
 		public function setList($list)
 		{
