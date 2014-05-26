@@ -14,7 +14,6 @@
 	$DAOFacade = new DAOFacade(new Controller());
 		
 	@$userName = $_POST['username'];
-	//$userName = "admin";
 	
 	if (checkIsAdmin($userName, $DAOFacade))
 	{

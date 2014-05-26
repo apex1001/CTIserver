@@ -15,7 +15,6 @@
 		private $agentExtension;
 		private $agentPin;	
 		private $terminateExtension;
-		private $connectionQueue;
 		
 		public function __construct($controller)
 		{

@@ -13,6 +13,7 @@
         private $target;
         private $pin;
         private $user;
+        private $role;
         private $value;
         
         function __construct(
@@ -22,6 +23,7 @@
         		$target  = "", 
         		$pin  = "", 
         		$user  = "", 
+        		$role  = "",
         		$value  = "") 
         {
         	$this->command = $command;
@@ -30,6 +32,7 @@
 	        $this->target = $target;
 	        $this->pin = $pin;
 	        $this->user = $user;
+	        $this->role = $role;
 	        $this->value = $value;
         }
        
@@ -91,6 +94,16 @@
 		public function setUser($user)
 		{
 			$this->user = $user;
+		}
+		
+		public function getRole()
+		{
+			return $this->role;
+		}
+		
+		public function setRole($role)
+		{
+			$this->role = $role;
 		}
 		
 		public function getValue()

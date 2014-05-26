@@ -30,14 +30,12 @@
 		private $userList;
 		private $cryptoModule;
 		private $cryptoActivated = true;
-		private $numRequest;
 		
 		public function __construct($url, $port)
 		{
 			parent::__construct($url, $port);
 			$this->readSettings();
-			$this->numRequest = $this->settingsArray['numRequest'];
- 			$this->callController = new CallController($this, $this->numRequest);
+ 			$this->callController = new CallController($this);
  			$this->daoFacade = new DAOFacade($this);
  			$this->cryptoModule = $this->getCryptoModule();	 								  
  		}	

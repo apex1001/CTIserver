@@ -28,7 +28,7 @@
 		 * @return plaintext
 		 * 
 		 */
-		function decryptRJ128($cipherText)
+		public function decryptRJ128($cipherText)
 		{
 			$cipherText = base64_decode($cipherText);
 			return trim(mcrypt_decrypt(MCRYPT_RIJNDAEL_128, $this->key, $cipherText, MCRYPT_MODE_CBC, $this->iv));			
@@ -41,7 +41,7 @@
 		 * @return ciphertext
 		 *
 		 */
-		function encryptRJ128($plaintext)
+		public function encryptRJ128($plaintext)
 		{
 			$cipherText = mcrypt_encrypt(MCRYPT_RIJNDAEL_128, $this->key, $plaintext, MCRYPT_MODE_CBC, $this->iv);
 			return base64_encode($cipherText);

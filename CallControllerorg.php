@@ -16,29 +16,20 @@
 	
 	class CallController
 	{
-		private $updateThreadArray;
+		private $updateThread;
+		private $updateThread2;
 		private $restClient;
 		private $activeUserList;
 		private $controller;
-		private $numRequest;
-		private $threadNumber;
-				
-		public function __construct($controller, $numRequest)
+		private $userArray;
+		
+		public function __construct($controller)
 		{
-			$this->updateThreadArray = array();
 			$this->controller = $controller;
+			$this->userArray = new UserArray();
 			$this->restClient = new RESTClient($controller);
-			$this->numRequest = $numRequest;
-			$this->threadNumber = 1;
-			
-			// Create the update threads
-			for ($i = 1; $i < $numRequest + 1; $i++)
-			{				
-				$updateThread = new UpdateThread($this, 1);
-				$this->updateThreadArray[$i] = $updateThread;
-				$updateThread->start();	
-			}	
-			
+			$this->updateThread = new UpdateThread($this);
+			$this->updateThread->start();
 		}
 		
 		/**
@@ -75,7 +66,7 @@
 			{
 				if ($response->errorcode == "403")
 				{
-					echo '-- Call status of user: ' . $user->id . " is: busy\r\n";
+					echo 'Call status of user: ' . $user->id . " is: busy\r\n";
 					$commandObject->Status = "Busy Dialog";
 					$this->sendCommand($commandObject, $user, $user->socket);
 					return;
@@ -103,14 +94,8 @@
 				$xmlResponse = $this->restClient->callTerminate($commandObject);
 				$xmlStripped = str_replace ("-","", $xmlResponse);
 				$response = @simplexml_load_string($xmlStripped);					
-			}
-
-			// Remove user from all update threads
-			for ($i = 1; $i < $this->numRequest + 1 ; $i++)
-			{
-				$extension = $commandObject->Value[0][0];
-				$this->updateThreadArray[$i]->removeUserByObject($user, $extension);	
 			}	
+			$this->updateThread->removeUserByObject($user);		
 		}
 		
 		/**
@@ -128,20 +113,12 @@
 				$xmlStripped = str_replace ("-","", $xmlResponse);
 				$response = simplexml_load_string($xmlStripped);								
 
-				// Remove both users/extensions from all update threads
-				for ($i = 1; $i < $this->numRequest + 1 ; $i++)
-				{
-					$extension = $commandObject->To;
-					$this->updateThreadArray[$i]->removeUserByObject($user, $extension);
-					$extension = $commandObject->Target;
-					$this->updateThreadArray[$i]->removeUserByObject($user, $extension);
-				}				
-				
 				// Terminate the original call if it was a two line transfer
 				sleep(6);				
 				$commandObject->To = $commandObject->Target;
 				$xmlResponse = $this->restClient->callTerminate($commandObject);				
 			}	
+			$this->updateThread->removeUserByObject($user);
 		}
 		
 		/**
@@ -159,12 +136,7 @@
 			$userArray[] = $commandObject;
 			$userArray[] = microtime(true);
 			$userArray[] = $user->socket;		
-			$this->updateThreadArray[$this->threadNumber]->addUser($userArray);
-
-			// Increase the threadNumber for the next user.
-			$this->threadNumber++;			
-			if ($this->threadNumber > $this->numRequest) $this->threadNumber = 1;
-			echo "next thread:" . $this->threadNumber;
+			$this->updateThread->addUser($userArray);		
 		}		
 	
 		/**
@@ -223,6 +195,7 @@
 		{
 			$extension = $commandObject->From;
 			$response = strtolower($this->restClient->checkExtension($commandObject));
+			//echo $response;
 			return ($response != "pin mismatch" && $response != "user not found " . $extension );			
 		}
 	}
@@ -238,15 +211,13 @@
 		private $activeUserList;
 		private $restClient;
 		private $listChanged;
-		private $threadId;
 	
-		public function __construct($controller, $threadId = 1)
+		public function __construct($controller)
 		{
 			$this->activeUserList = new ActiveUserList();
 			$this->controller = $controller;				
 			$this->daoFacade = new DAOFacade($controller->getController());
-			$this->restClient = new RESTClient($controller->getController());	
-			$this->threadId = $threadId;		
+			$this->restClient = new RESTClient($controller->getController());			
 		}
 	
 		/**
@@ -257,11 +228,10 @@
 		{			
 			while (true)
 			{					
-				$dummy = 0;
 				try 
 				{				
-					// echo count($this->activeUserList);
-					// sleep(1);					
+					//echo count($this->activeUserList);			
+					//sleep(1);					
 					if (count($this->activeUserList) > 0)
 					{						
 						foreach ($this->activeUserList as $key => $userArray)
@@ -291,8 +261,7 @@
 									
 									if ($status != $callStatus)
 									{
-										echo '-- UpdateThread [' . $this->threadId . '] Call status of user: ' 
-												. $userArray[0] . ' is: ' . $status . "\r\n";									
+										echo 'Call status of user: ' . $userArray[0] . ' is: ' . $status . "\r\n";									
 										
 										// Get commandObject, user and update status
 										// Get then store again to get correct object reference. Don't change this
@@ -457,15 +426,12 @@
 		 * @param $user object to remove
 		 *
 		 */
-		public function removeUserByObject($user, $extension)
+		public function removeUserByObject($user)
 		{
 			foreach($this->activeUserList as $key => $userArray)
 			{
-				echo "remove" . $extension;
-				if ($userArray[0] == $user->id && (
-						($userArray[2]->To == $extension && $userArray[2]->Target == "") ||
-						 $userArray[2]->Target == $extension))
-				{					
+				if ($userArray[0] == $user->id)
+				{
 					$this->removeUser($key);
 					break;
 				}
