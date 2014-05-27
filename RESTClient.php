@@ -57,7 +57,7 @@
 			}
 			catch (Exception $e) 
 			{
-				echo $e->getMessage();
+				echo $e->getMessage(). "\r\n";
 			}
 		}
 		
@@ -90,7 +90,7 @@
 			}
 			catch (Exception $e)
 			{
-				echo $e->getMessage();
+				echo $e->getMessage() . "\r\n";
 			}
 		}
 		
@@ -136,7 +136,7 @@
 			}
 			catch (Exception $e)
 			{
-				echo $e->getMessage();
+				echo $e->getMessage() . "\r\n";
 			}
 		}
 		
@@ -176,7 +176,7 @@
 			}
 			catch (Exception $e)
 			{
-				echo $e->getMessage();
+				echo $e->getMessage() . "\r\n";
 			}		
 
 		}

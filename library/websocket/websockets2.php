@@ -45,6 +45,7 @@ abstract class WebSocketServer {
     $this->maxBufferSize = $bufferLength;
     $this->master = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)  or die("Failed: socket_create()");
     socket_set_option($this->master, SOL_SOCKET, SO_REUSEADDR, 1) or die("Failed: socket_option()");
+    socket_set_option($this->master, SOL_SOCKET, SO_RCVTIMEO, array("sec"=>15, "usec"=>0)); // added for socket timeout
     socket_bind($this->master, $addr, $port)                      or die("Failed: socket_bind()");
     socket_listen($this->master,20)                               or die("Failed: socket_listen()");
     $this->sockets[] = $this->master;
@@ -61,17 +62,44 @@ abstract class WebSocketServer {
   }
   
   protected function send($user,$message) {
+  	set_error_handler(array(&$this, "handleError"));
     //$this->stdout("> $message");
     $message = $this->frame($message,$user);
     $result = socket_write($user->socket, $message, strlen($message));
+    restore_error_handler();
+  }
+  
+  /**
+   * Catch warnings and errors, surpress socket errors and warnings
+   * 
+   * @param $errno
+   * @param $errstr
+   * @param $errfile
+   * @param $errline
+   * @return boolean
+   * 
+   */
+  function handleError($errno, $errstr, $errfile, $errline)
+  {
+  	// error was suppressed with the @-operator
+  	if (0 === error_reporting()) {
+  		return false;
+  	}
+  	
+  	// Print error, ignore socket errors
+  	if ($errno != 2) {
+  		 $this->stdout($errno . "|" . $errstr);  		
+  	}  
   }
 
   /**
    * Main processing loop
    */
   public function run() {
-
-    while(true) {
+  	set_error_handler(array(&$this, "handleError"));
+  	while(true) {
+  	 try{
+  	  
 	  if (empty($this->sockets)) {
         $this->sockets[] = $this->master;
       }
@@ -91,10 +119,10 @@ abstract class WebSocketServer {
           }
         } 
         else {
-          $numBytes = socket_recv($socket,$buffer,$this->maxBufferSize,0); 
-          //if ($numBytes === false) {
-          //  throw new Exception('Socket error: ' . socket_strerror(socket_last_error($socket)));
-          // }
+            $numBytes = socket_recv($socket,$buffer,$this->maxBufferSize,0); 
+            //if ($numBytes === false) {
+            //  throw new Exception('Socket error: ' . socket_strerror(socket_last_error($socket)));
+            // }               
           if ($numBytes == 0 || $numBytes === false) { // Changed to prevent error throwing on socket error. 
             $this->disconnect($socket);
             $this->stdout("Client disconnected. TCP connection lost: " . $socket);
@@ -118,30 +146,37 @@ abstract class WebSocketServer {
                   $this->process($user, $message); // todo: Re-check this.  Should already be UTF-8.
                 }
               } 
-              else {			  
+              else {              	
                 do {
-                  $numByte = socket_recv($socket,$buffer,$this->maxBufferSize,MSG_PEEK);
-                  if ($numByte > 0) {
-                    $numByte = socket_recv($socket,$buffer,$this->maxBufferSize,4); // Changed. Was 0, causes buffer errors!
-                    if (($message = $this->deframe($buffer, $user)) !== FALSE) {
-                      if($user->hasSentClose) {
-                        $this->disconnect($user->socket);
-                        $this->stdout("Client disconnected. Sent close: " . $socket);
-                      }
-                      else {
-                      $this->process($user,$message);
+                  $numByte = socket_recv($socket,$buffer,$this->maxBufferSize,MSG_PEEK);                  
+                  if ($numByte > 0) {                             
+                      $numByte = socket_recv($socket,$buffer,$this->maxBufferSize,4); // Changed. Was 0, causes buffer errors!
+                      if (($message = $this->deframe($buffer, $user)) !== FALSE) {
+                        if($user->hasSentClose) {
+                          $this->disconnect($user->socket);
+                          $this->stdout("Client disconnected. Sent close: " . $socket);
+                        }
+                        else {
+                        $this->process($user,$message);
                       }
                     }
-                  }
-                } while($numByte > 0);
+                  }  
+                }
+                while($numByte > 0);
+                
               }
             }
           }
         }
       }
-    }
+  	 }
+  	 catch (Exception $e)
+  	 {
+  	 	// Don't do anything
+  	 }
+    }    
   }
-
+  
   protected function connect($socket) {
     $user = new $this->userClass(uniqid(), $socket);
     array_push($this->users, $user);

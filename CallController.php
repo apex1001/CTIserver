@@ -14,12 +14,10 @@
 	require_once('./store/domain/CommandObject.php');
 	require_once('./RESTClient.php');
 	
-	class CallController
+	class CallController	
 	{
 		private $updateThreadArray;
-		private $updateThread1;
-		private $updateThread2;
-		private $updateThread3;
+		private $updateThread;
 		private $restClient;
 		private $activeUserList;
 		private $controller;
@@ -35,20 +33,18 @@
 			// Initiate three UpdateThreads and add to threadArray. Doing this
 			// dynamically with a local variable _crashes_ the threads after
 			// a while, propably since the local variable is reused and later
-			// destroyed. Pthreads doesn't like this, So please don't change this.
+			// destroyed. Pthreads doesn't like this, So please don't change this.					
 			$this->updateThread1 = new UpdateThread($this, 1);
 			$this->updateThreadArray[1] = $this->updateThread1;
-			
-			$this->updateThread2 = new UpdateThread($this, 2);
-			$this->updateThreadArray[2] = $this->updateThread2;
-			
-			$this->updateThread3 = new UpdateThread($this, 3);
-			$this->updateThreadArray[3] = $this->updateThread3;
-			
-			// Start the threads
 			$this->updateThread1->start();
-			$this->updateThread2->start();
-			$this->updateThread3->start();
+			
+ 			$this->updateThread2 = new UpdateThread($this, 2);
+ 			$this->updateThreadArray[2] = $this->updateThread2;
+ 			$this->updateThread2->start();
+	
+ 			$this->updateThread3 = new UpdateThread($this, 3);
+ 			$this->updateThreadArray[3] = $this->updateThread3;
+ 			$this->updateThread3->start();
 		}
 		
 		/**
@@ -174,7 +170,7 @@
 			// Increase the threadNumber for the next user.
 			$this->threadNumber++;			
 			if ($this->threadNumber > count($this->updateThreadArray)) $this->threadNumber = 1;
-			echo "next thread:" . $this->threadNumber;
+			//echo "next thread:" . $this->threadNumber;
 		}		
 	
 		/**
@@ -241,7 +237,7 @@
 	 * Update thread for call status polling
 	 *
 	 */	
-	class UpdateThread extends Thread
+	class UpdateThread extends Worker
 	{
 		private $controller;
 		private $daoFacade;
@@ -249,29 +245,33 @@
 		private $restClient;
 		private $listChanged;
 		private $threadId;
+		private $mutex;
 	
 		public function __construct($controller, $threadId = 1)
 		{
-			$this->activeUserList = new ActiveUserList();
 			$this->controller = $controller;				
-			$this->daoFacade = new DAOFacade($controller->getController());
-			$this->restClient = new RESTClient($controller->getController());	
-			$this->threadId = $threadId;		
+			$this->threadId = $threadId;
 		}
+		
 	
 		/**
 		 * Main updateThread routine
 		 * 
 		 */
 		public function run()
-		{			
+		{				
+			$this->activeUserList = new ActiveUserList();
+			$this->daoFacade = new DAOFacade($this->controller->getController());
+			$this->restClient = new RESTClient($this->controller->getController());
+			echo 'UpdateThread ' . $this->threadId . " ready!\r\n";
+			
 			while (true)
-			{					
-				$dummy = 0;
+			{				
 				try 
 				{				
-					// echo count($this->activeUserList);
-					// sleep(1);					
+					//echo count($this->activeUserList);
+					//sleep(1);					
+					usleep(1000);
 					if (count($this->activeUserList) > 0)
 					{						
 						foreach ($this->activeUserList as $key => $userArray)
@@ -321,7 +321,7 @@
 										
 										// Send changed status
 										$this->controller->sendCommand($commandObject, $userArray[1], $socket);
-										
+																				
 										// Remove user from list if call terminated
 										if ($status == "Terminated Dialog")
 										{																		
@@ -329,14 +329,16 @@
 											$this->removeUser($key);	
 										}							
 									}						
-								}
+								}								
+
 							}
 						}						
 					}
+					
 				}
 				catch (Exception $e)
-				{
-					echo $e->getMessage();
+				{					
+					echo $e->getMessage() . "\r\n";
 				}				
 			}
 		}		
@@ -378,7 +380,7 @@
 			}
 			catch (Exception $e)
 			{
-				echo 'Error:' . $e;
+				echo 'Error:' . $e . "\r\n";
 			}
 		
 			return null;		
@@ -413,7 +415,8 @@
 		{						
 			$this->activeUserList[] = $userArray;
 			$this->listChanged = true;
-			$this->setList($this->activeUserList);			
+			$this->setList($this->activeUserList);	
+			//echo "Added user";	
 		}
 		
 		/**
@@ -471,10 +474,9 @@
 		{
 			foreach($this->activeUserList as $key => $userArray)
 			{
-				echo "remove" . $extension;
 				if ($userArray[0] == $user->id && (
-						($userArray[2]->To == $extension && $userArray[2]->Target == "") ||
-						 $userArray[2]->Target == $extension))
+					($userArray[2]->To == $extension && $userArray[2]->Target == "") ||
+					 $userArray[2]->Target == $extension))
 				{					
 					$this->removeUser($key);
 					break;
