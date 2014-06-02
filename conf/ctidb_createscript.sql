@@ -1,6 +1,6 @@
 
 CREATE TABLE users (
-    username varchar(20) NOT NULL,
+    	username varchar(255) NOT NULL,
 	role varchar(10) NOT NULL,
    	primary key (username) 
 );
@@ -14,7 +14,7 @@ CREATE TABLE extensions (
 	id BIGSERIAL NOT NULL,      
 	extension_number varchar(20) NOT NULL,
 	primary_number boolean default false,
-	username varchar(20) NOT NULL,
+	username varchar(255) NOT NULL,
 	pin varchar(20),
 	useredit boolean default true,
    	primary key (id)
@@ -25,7 +25,7 @@ CREATE TABLE history (
 	dialled_party varchar(20) NOT NULL,
 	date_from timestamp NOT NULL,
 	date_to timestamp,
-	username varchar(20) NOT NULL,
+	username varchar(255) NOT NULL,
    	primary key (id)
 );
 
